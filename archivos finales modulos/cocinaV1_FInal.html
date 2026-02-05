@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+   <meta charset="utf-8"/>
+   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+   <title>KDS | Cocina Caliente</title>
+  
+   <link href="https://fonts.googleapis.com" rel="preconnect"/>
+   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+
+   <script>
+       tailwind.config = {
+           darkMode: "class",
+           theme: {
+               extend: {
+                   colors: {
+                       "primary": "#1392ec",
+                       "background-dark": "#0f1115",
+                       "card-dark": "#1a1d24",
+                       "timer-green": "#22c55e",
+                       "timer-yellow": "#eab308",
+                       "timer-red": "#ef4444",
+                   },
+                   fontFamily: { "display": ["Space Grotesk", "sans-serif"], "body": ["Noto Sans", "sans-serif"] },
+                   boxShadow: {
+                       'neon-blue': '0 0 10px rgba(19, 146, 236, 0.3)',
+                       'neon-green': '0 0 10px rgba(34, 197, 94, 0.2)',
+                       'neon-red': '0 0 15px rgba(239, 68, 68, 0.4)',
+                   }
+               },
+           },
+       }
+   </script>
+   <style>
+       .hide-scrollbar::-webkit-scrollbar { display: none; }
+       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+       @keyframes pulse-red {
+           0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.2); background-color: #7f1d1d; }
+           50% { box-shadow: 0 0 50px rgba(239,68,68,0.6); background-color: #991b1b; }
+       }
+       .void-card { animation: pulse-red 1.2s infinite; border: 4px solid #ef4444; }
+   </style>
+</head>
+<body class="bg-[#f6f7f8] dark:bg-background-dark font-display text-white overflow-x-hidden min-h-screen flex flex-col transition-colors duration-300">
+
+
+   <audio id="sound-new-order" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+
+   <header class="flex items-center justify-between p-4 bg-[#14171c] border-b border-white/5 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+       <div class="flex items-center gap-4">
+           <div class="flex items-center justify-center size-10 rounded-full bg-white/5">
+               <span class="material-symbols-outlined text-primary">skillet</span>
+           </div>
+           <div>
+               <h1 class="text-xl font-bold tracking-tight text-white leading-none">KDS COCINA</h1>
+               <p id="connection-status" class="text-xs text-green-500 font-medium tracking-wide mt-0.5 flex items-center gap-1">
+                   <span class="size-2 rounded-full bg-green-500 animate-pulse"></span> ONLINE
+               </p>
+           </div>
+       </div>
+       <div class="flex items-center gap-3 bg-[#1e232b] px-3 py-1.5 rounded-lg border border-white/5">
+           <span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+           <p id="clock-display" class="text-lg font-bold tracking-widest text-white">00:00</p>
+       </div>
+   </header>
+
+
+   <div class="flex gap-3 p-4 overflow-x-auto hide-scrollbar border-b border-white/5 bg-[#14171c]/50">
+       <button onclick="app.fetchOrders()" class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary text-white pl-3 pr-4 shadow-neon-blue active:scale-95 transition-all">
+           <span class="material-symbols-outlined text-[18px]">sync</span>
+           <p class="text-sm font-bold">Refrescar</p>
+       </button>
+       <div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#232932] border border-white/5 pl-3 pr-4">
+           <span class="material-symbols-outlined text-timer-yellow text-[18px]">timer</span>
+           <p id="count-pending" class="text-gray-300 text-sm font-medium">Pendientes: 0</p>
+       </div>
+   </div>
+
+
+   <main id="orders-container" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min pb-20">
+       <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50">
+           <span class="material-symbols-outlined text-4xl animate-spin mb-4">progress_activity</span>
+           <p class="text-sm tracking-widest uppercase">Cargando...</p>
+       </div>
+   </main>
+
+
+   <script>
+       const CONFIG = {
+           apiUrl: "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec",
+           pollInterval: 8000
+       };
+
+
+       const app = {
+           orders: [],
+           lastOrderCount: 0,
+
+
+           init: () => {
+               app.startClock();
+               app.fetchOrders();
+               setInterval(() => app.fetchOrders(), CONFIG.pollInterval);
+               setInterval(() => app.updateTimers(), 1000);
+           },
+
+
+           startClock: () => {
+               setInterval(() => {
+                   const now = new Date();
+                   document.getElementById('clock-display').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+               }, 1000);
+           },
+
+
+           parseItemsSmart: (itemsString) => {
+               if (!itemsString) return [];
+               let cleanString = String(itemsString).trim();
+               if (cleanString.startsWith('|')) cleanString = cleanString.substring(1);
+              
+               const items = [];
+               let currentItem = "";
+               let bracketDepth = 0;
+
+
+               for (let i = 0; i < cleanString.length; i++) {
+                   const char = cleanString[i];
+                   if (char === '[') bracketDepth++;
+                   else if (char === ']') bracketDepth--;
+                   if ((char === ',' || char === '|') && bracketDepth === 0) {
+                       if (currentItem.trim()) items.push(currentItem.trim());
+                       currentItem = "";
+                   } else { currentItem += char; }
+               }
+               if (currentItem.trim()) items.push(currentItem.trim());
+
+
+               return items.map(rawItem => {
+                   const match = rawItem.match(/^(.*?)\s*\[(.*?)\]$/);
+                   if (match) {
+                       return { name: match[1].trim(), notes: match[2].split(',').map(n => n.trim()) };
+                   } else { return { name: rawItem, notes: [] }; }
+               });
+           },
+
+
+           fetchOrders: async () => {
+               const statusEl = document.getElementById('connection-status');
+               try {
+                   statusEl.innerHTML = '<span class="size-2 rounded-full bg-yellow-500 animate-pulse"></span> BUSCANDO...';
+                   const res = await fetch(`${CONFIG.apiUrl}?action=get_orders`);
+                   const data = await res.json();
+                  
+                   if (!Array.isArray(data)) throw new Error("Versión incorrecta del Script");
+                   app.orders = data;
+                   app.renderOrders();
+                  
+                   if (app.orders.length > app.lastOrderCount) {
+                       try { document.getElementById('sound-new-order').play(); } catch(e){}
+                   }
+                   app.lastOrderCount = app.orders.length;
+                  
+                   const validIds = new Set(app.orders.filter(o => o.total >= 0).map(o => o.id));
+                   document.getElementById('count-pending').innerText = `Pendientes: ${validIds.size}`;
+                   statusEl.innerHTML = '<span class="size-2 rounded-full bg-green-500"></span> ONLINE';
+
+
+               } catch (e) {
+                   console.error(e);
+                   document.getElementById('orders-container').innerHTML = `<div class="col-span-full text-center py-20 text-red-500 font-bold">Error: ${e.message}</div>`;
+                   statusEl.innerHTML = '<span class="size-2 rounded-full bg-red-500"></span> ERROR';
+               }
+           },
+
+
+           completeOrder: async (id, btnElement) => {
+               const card = btnElement.closest('.order-card');
+               const isVoid = card.classList.contains('void-card');
+              
+               if(!isVoid && !confirm("¿Plato servido?")) return;
+              
+               // LÓGICA IMPORTANTE: Definir qué estado mandar al Excel
+               const statusToSend = isVoid ? "ANULADO" : "LISTO";
+
+
+               card.style.opacity = '0.5';
+               card.style.pointerEvents = 'none';
+               btnElement.innerText = "PROCESANDO...";
+
+
+               try {
+                   await fetch(CONFIG.apiUrl, {
+                       method: 'POST',
+                       mode: 'no-cors',
+                       headers: {'Content-Type': 'text/plain'},
+                       body: JSON.stringify({
+                           type: 'complete_order',
+                           id: id,
+                           finalStatus: statusToSend // <--- Enviamos el estado correcto
+                       })
+                   });
+                   app.orders = app.orders.filter(o => o.id != id);
+                   app.renderOrders();
+               } catch (e) {
+                   alert("Error al conectar");
+                   card.style.opacity = '1';
+                   card.style.pointerEvents = 'auto';
+                   btnElement.innerText = isVoid ? "BORRAR" : "LISTO";
+               }
+           },
+
+
+           renderOrders: () => {
+               const container = document.getElementById('orders-container');
+               if (app.orders.length === 0) {
+                   container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-600"><span class="material-symbols-outlined text-6xl mb-4">check_circle</span><p class="text-xl font-bold">¡Cocina Limpia!</p></div>`;
+                   return;
+               }
+
+
+               const ordersById = {};
+               app.orders.forEach(order => {
+                   if (!ordersById[order.id]) ordersById[order.id] = { ...order, isVoid: false };
+                   const itemsText = String(order.items).toUpperCase();
+                   if (order.total < 0 || itemsText.includes("ANULADO") || itemsText.includes("CANCELADO")) {
+                       ordersById[order.id].isVoid = true;
+                   }
+               });
+
+
+               const displayOrders = Object.values(ordersById);
+
+
+               container.innerHTML = displayOrders.map(order => {
+                   const startTime = new Date(order.time).getTime();
+                   const isVoid = order.isVoid;
+                   const parsedItems = app.parseItemsSmart(String(order.items));
+
+
+                   const itemsHtml = parsedItems.map(item => {
+                       const notesHtml = item.notes.length > 0 ?
+                           item.notes.map(note => {
+                               const isWarning = note.toLowerCase().includes('sin ') || note.toLowerCase().includes('no ');
+                               const noteColor = isWarning ? 'text-red-400 font-bold' : 'text-yellow-500/80';
+                               return `<div class="flex items-center gap-1 pl-4 text-sm ${noteColor}"><span class="material-symbols-outlined text-[14px]" style="transform: scaleX(-1);">subdirectory_arrow_right</span>${note}</div>`;
+                           }).join('') : '';
+
+
+                       return `<div class="border-b border-white/5 pb-3 mb-2 last:border-0 last:mb-0 last:pb-0"><div class="flex items-start gap-3"><span class="material-symbols-outlined text-xs ${isVoid ? 'text-white' : 'text-primary'} mt-1">circle</span><div class="flex-1"><p class="text-xl font-bold text-white leading-tight uppercase tracking-tight">${item.name}</p><div class="mt-1 space-y-0.5">${notesHtml}</div></div></div></div>`;
+                   }).join('');
+
+
+                   if (isVoid) {
+                       return `
+                       <div class="order-card flex flex-col bg-red-900 rounded-xl overflow-hidden shadow-2xl relative h-fit void-card z-50 order-first" data-id="${order.id}">
+                           <div class="bg-red-600 text-white p-4 flex justify-between items-center animate-pulse">
+                               <h2 class="text-3xl font-black tracking-tighter">⛔ ANULADO</h2>
+                               <span class="text-2xl font-bold">#${order.id}</span>
+                           </div>
+                           <div class="p-6 bg-red-950 flex flex-col items-center justify-center text-center space-y-4">
+                               <span class="material-symbols-outlined text-6xl text-red-500">block</span>
+                               <p class="text-xl font-bold text-white uppercase">NO PREPARAR</p>
+                               <p class="text-sm text-red-300">Pedido cancelado por el salón.</p>
+                           </div>
+                           <button onclick="app.completeOrder(${order.id}, this)" class="w-full h-16 bg-white text-red-900 font-black text-xl tracking-widest hover:bg-gray-200 transition-colors uppercase">
+                               CONFIRMAR Y BORRAR
+                           </button>
+                       </div>`;
+                   } else {
+                       return `
+                       <div class="order-card flex flex-col bg-card-dark rounded-xl border border-white/5 overflow-hidden shadow-lg group relative h-fit transition-all duration-500" data-time="${startTime}">
+                           <div class="status-stripe absolute top-0 left-0 w-1.5 h-full bg-timer-green transition-colors duration-500"></div>
+                           <div class="p-4 pl-6 flex justify-between items-start bg-white/5 border-b border-white/5">
+                               <div>
+                                   <div class="flex items-baseline gap-2"><h2 class="text-2xl font-bold text-white tracking-tight">MESA ${order.mesa}</h2><span class="text-sm text-gray-400 font-medium">#${order.id}</span></div>
+                                   <div class="flex items-center gap-1.5 mt-1"><span class="material-symbols-outlined text-gray-500 text-[16px]">person</span><p class="text-sm text-gray-400 font-bold uppercase">${order.mozo}</p></div>
+                               </div>
+                               <div class="timer-box bg-white/5 border border-white/10 px-3 py-1 rounded flex items-center gap-2 transition-colors duration-500"><span class="material-symbols-outlined text-[18px]">timer</span><span class="timer-display text-xl font-bold tracking-wider font-display">00:00</span></div>
+                           </div>
+                           <div class="px-5 pl-6 py-4 flex-1 space-y-2">${itemsHtml}</div>
+                           <div class="p-4 pl-6 bg-[#1f242d] border-t border-white/5 mt-auto">
+                               <button onclick="app.completeOrder(${order.id}, this)" class="w-full h-12 bg-primary hover:bg-blue-500 text-white rounded-lg font-bold text-base tracking-wide shadow-neon-blue transition-all flex items-center justify-center gap-2 active:scale-95"><span class="material-symbols-outlined">check_circle</span>LISTO</button>
+                           </div>
+                       </div>`;
+                   }
+               }).join('');
+               app.updateTimers();
+           },
+
+
+           updateTimers: () => {
+               const now = new Date().getTime();
+               document.querySelectorAll('.order-card').forEach(card => {
+                   if(card.classList.contains('void-card')) return;
+                   const startTime = parseInt(card.getAttribute('data-time'));
+                   if(!startTime) return;
+                   const diff = now - startTime;
+                   const minutes = Math.floor(diff / 60000);
+                   const seconds = Math.floor((diff % 60000) / 1000);
+                   const timeString = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+                   const timerDisplay = card.querySelector('.timer-display');
+                   if(timerDisplay) timerDisplay.innerText = timeString;
+                   const stripe = card.querySelector('.status-stripe');
+                   const timerBox = card.querySelector('.timer-box');
+                   card.classList.remove('critical-pulse', 'border-red-500/30');
+                   if(timerBox) timerBox.className = "timer-box px-3 py-1 rounded flex items-center gap-2 transition-colors duration-500 border";
+                   if (minutes >= 20) {
+                       if(stripe) stripe.className = "status-stripe absolute top-0 left-0 w-1.5 h-full bg-timer-red shadow-neon-red";
+                       if(timerBox) timerBox.classList.add("bg-timer-red/10", "border-timer-red/30", "text-timer-red");
+                       card.classList.add('critical-pulse', 'border-red-500/30');
+                   } else if (minutes >= 10) {
+                       if(stripe) stripe.className = "status-stripe absolute top-0 left-0 w-1.5 h-full bg-timer-yellow shadow-[0_0_10px_rgba(234,179,8,0.3)]";
+                       if(timerBox) timerBox.classList.add("bg-timer-yellow/10", "border-timer-yellow/20", "text-timer-yellow");
+                   } else {
+                       if(stripe) stripe.className = "status-stripe absolute top-0 left-0 w-1.5 h-full bg-timer-green shadow-[0_0_10px_rgba(34,197,94,0.3)]";
+                       if(timerBox) timerBox.classList.add("bg-timer-green/10", "border-timer-green/20", "text-timer-green");
+                   }
+               });
+           }
+       };
+       app.init();
+   </script>
+</body>
+</html>

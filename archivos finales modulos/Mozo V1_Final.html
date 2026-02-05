@@ -1,0 +1,538 @@
+﻿<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+   <meta charset="utf-8"/>
+   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+   <title>Restaurante360 | Mozo V31</title>
+  
+   <link href="https://fonts.googleapis.com" rel="preconnect"/>
+   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+   <script>
+       tailwind.config = {
+           darkMode: "class",
+           theme: {
+               extend: {
+                   colors: { "primary": "#1392ec", "primary-dark": "#0b6db5", "background-dark": "#101a22", "surface-dark": "#16222b", "card-dark": "#1c2a36", "status-green": "#00E676", "status-amber": "#FFAB00", "status-red": "#FF5252" },
+                   fontFamily: { "display": ["Space Grotesk", "sans-serif"], "body": ["Noto Sans", "sans-serif"] },
+                   boxShadow: { 'glow': '0 0 15px rgba(19, 146, 236, 0.4)' },
+                   animation: { 'fade-in': 'fadeIn 0.3s ease-out' },
+                   keyframes: { fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } } }
+               },
+           },
+       }
+   </script>
+   <style>
+       body { background-color: #101a22; min-height: 100dvh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+       .hide-scrollbar::-webkit-scrollbar { display: none; }
+       #eruda, .eruda-container { display: none !important; }
+       #loader { position: fixed; inset: 0; z-index: 1000; background: #101a22; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+       .spin-fast { animation: spin 0.8s linear infinite; }
+       @keyframes spin { 100% { transform: rotate(360deg); } }
+   </style>
+</head>
+<body class="bg-background-dark text-white font-display antialiased selection:bg-primary selection:text-white">
+
+
+   <div id="loader">
+       <div class="flex flex-col items-center gap-4">
+           <div class="size-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin"></div>
+           <p class="text-primary text-xs font-bold tracking-[0.2em] animate-pulse">SISTEMA MOZO</p>
+       </div>
+   </div>
+
+
+   <dialog id="modal-pin" class="bg-surface-dark text-white p-0 rounded-2xl backdrop:bg-black/90 w-full max-w-sm shadow-2xl m-auto z-[9999] border border-white/10">
+       <div class="p-6 text-center">
+           <h3 class="text-lg font-bold mb-4">Ingresa PIN</h3>
+           <div class="flex justify-center gap-2 mb-6">
+               <div id="dot-1" class="size-3 rounded-full bg-white/10 transition-colors"></div>
+               <div id="dot-2" class="size-3 rounded-full bg-white/10 transition-colors"></div>
+               <div id="dot-3" class="size-3 rounded-full bg-white/10 transition-colors"></div>
+               <div id="dot-4" class="size-3 rounded-full bg-white/10 transition-colors"></div>
+           </div>
+           <div class="grid grid-cols-3 gap-3">
+               <button onclick="app.addPin(1)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">1</button>
+               <button onclick="app.addPin(2)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">2</button>
+               <button onclick="app.addPin(3)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">3</button>
+               <button onclick="app.addPin(4)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">4</button>
+               <button onclick="app.addPin(5)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">5</button>
+               <button onclick="app.addPin(6)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">6</button>
+               <button onclick="app.addPin(7)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">7</button>
+               <button onclick="app.addPin(8)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">8</button>
+               <button onclick="app.addPin(9)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">9</button>
+               <button onclick="document.getElementById('modal-pin').close(); app.resetPin()" class="h-14 rounded-xl text-red-400 font-bold text-xs uppercase tracking-widest">CANCELAR</button>
+               <button onclick="app.addPin(0)" class="h-14 rounded-xl bg-white/5 text-xl font-bold active:bg-primary border border-white/5">0</button>
+               <button onclick="app.resetPin()" class="h-14 rounded-xl text-slate-400 hover:text-white transition-colors"><span class="material-symbols-outlined">backspace</span></button>
+           </div>
+       </div>
+   </dialog>
+
+
+   <div id="app" class="relative flex min-h-screen w-full flex-col max-w-md mx-auto shadow-2xl overflow-hidden bg-background-dark border-x border-white/5 opacity-0 transition-opacity duration-500">
+      
+       <section id="view-waiter" class="relative z-10 flex flex-col h-full min-h-screen animate-fade-in hidden">
+           <header class="flex items-center justify-between px-6 py-6 bg-transparent sticky top-0 z-50">
+               <span class="material-symbols-outlined text-gray-500">grid_view</span>
+               <div class="flex flex-col items-center">
+                   <span class="text-[10px] font-bold tracking-[0.3em] text-primary uppercase mb-1">RESTAURANTE360</span>
+                   <h2 class="text-xs font-semibold tracking-widest text-white/70">CONTROL PERSONAL</h2>
+               </div>
+               <span class="material-symbols-outlined text-gray-500">wifi</span>
+           </header>
+           <div class="px-6 pt-6 pb-6">
+               <h1 class="text-4xl font-bold leading-none tracking-tighter text-white mb-2">Equipo <br/><span class="text-primary">Operativo</span></h1>
+               <p class="text-slate-400 text-xs font-medium mt-2">Toque su tarjeta para ingresar.</p>
+           </div>
+           <div id="waiter-grid" class="grid grid-cols-2 gap-4 px-6 pb-32"></div>
+       </section>
+
+
+       <section id="view-tables" class="hidden relative z-10 flex-col h-full min-h-screen animate-fade-in">
+           <header class="flex-none bg-[#111b22]/95 backdrop-blur-md border-b border-white/5 sticky top-0 z-50 shadow-lg">
+               <div class="flex items-center p-4 pb-2 justify-between">
+                   <div class="flex items-center gap-3">
+                       <img id="active-waiter-img" src="" class="size-10 rounded-full ring-2 ring-primary/50 object-cover">
+                       <div class="flex flex-col">
+                           <span class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Operador</span>
+                           <h2 id="active-waiter-name" class="text-white text-base font-bold leading-none tracking-tight">--</h2>
+                       </div>
+                   </div>
+                   <div class="flex gap-2">
+                       <button onclick="app.manualRefresh()" id="btn-refresh" class="h-8 w-8 flex items-center justify-center rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-primary/20 border border-white/10 transition-colors">
+                           <span class="material-symbols-outlined text-sm">cached</span>
+                       </button>
+                       <button onclick="app.logout()" class="text-[10px] font-bold text-red-400 uppercase tracking-widest border border-red-500/20 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors">Salir</button>
+                   </div>
+               </div>
+               <div id="zone-filters" class="flex gap-2 px-4 py-3 overflow-x-auto hide-scrollbar"></div>
+           </header>
+           <main id="tables-grid" class="flex-1 overflow-y-auto hide-scrollbar p-4 grid grid-cols-2 gap-3 pb-32"></main>
+       </section>
+
+
+       <section id="view-menu" class="hidden relative z-10 flex-col h-full min-h-screen pb-32 animate-fade-in">
+           <div class="sticky top-0 z-40 bg-[#111b22]/95 backdrop-blur-md border-b border-white/5 shadow-xl transition-all" id="menu-header">
+               <div class="flex items-center px-4 py-3 justify-between">
+                   <div class="flex items-center gap-2">
+                        <button onclick="app.switchView('tables')" class="text-white flex size-10 shrink-0 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 active:scale-90 transition-all"><span class="material-symbols-outlined text-[20px]">arrow_back</span></button>
+                        <div class="flex flex-col">
+                           <h2 id="menu-table-id" class="text-white text-lg font-bold leading-tight tracking-wider uppercase">MESA --</h2>
+                           <span id="menu-order-id" class="text-primary text-[10px] font-bold tracking-[0.15em] opacity-90">ID: --</span>
+                       </div>
+                   </div>
+                  
+                   <div class="flex items-center gap-2">
+                       <button onclick="app.showTableSummary()" class="text-white flex size-10 shrink-0 items-center justify-center rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-all border border-white/5">
+                           <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+                       </button>
+                       <button onclick="app.toggleCorrectionMode()" id="btn-correction" class="text-slate-400 flex size-10 shrink-0 items-center justify-center rounded-full bg-white/5 hover:text-red-400 transition-all border border-transparent">
+                           <span class="material-symbols-outlined text-[20px]">sync_problem</span>
+                       </button>
+                   </div>
+               </div>
+
+
+               <div id="correction-panel" class="hidden mx-4 mb-2 bg-[#1c2a36] rounded-xl border border-red-500/30 overflow-hidden shadow-2xl animate-fade-in relative z-50">
+                   <div class="bg-red-500/10 p-3 border-b border-red-500/20 flex justify-between items-center">
+                       <div class="flex items-center gap-2">
+                           <span class="material-symbols-outlined text-red-400 text-sm">history</span>
+                           <h3 class="text-red-400 font-bold text-xs tracking-widest uppercase">PEDIDOS CONFIRMADOS</h3>
+                       </div>
+                       <button onclick="document.getElementById('correction-panel').classList.add('hidden')" class="text-white/50 hover:text-white"><span class="material-symbols-outlined text-sm">close</span></button>
+                   </div>
+                   <div id="correction-list" class="p-3 space-y-2 max-h-48 overflow-y-auto"></div>
+               </div>
+               <div id="category-chips" class="flex gap-2 px-4 pb-4 overflow-x-auto hide-scrollbar snap-x pt-2"></div>
+           </div>
+          
+           <div id="menu-grid" class="grid grid-cols-2 gap-4 p-4"></div>
+          
+           <div class="fixed bottom-0 left-0 w-full z-50 max-w-md mx-auto right-0">
+               <div class="relative flex flex-col items-stretch bg-[#16222b]/90 backdrop-blur-xl border-t border-white/10 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
+                   <div onclick="app.toggleCartPreview()" class="px-6 pt-4 pb-2 flex justify-between items-end cursor-pointer active:opacity-70 transition-opacity">
+                       <div class="flex flex-col">
+                           <p class="text-white text-xs font-bold tracking-widest uppercase opacity-70">Total Estimado</p>
+                           <p id="cart-summary-text" class="text-primary text-xs truncate max-w-[200px] font-medium mt-1">Carrito vacío...</p>
+                       </div>
+                       <div class="flex items-center gap-2">
+                           <p id="cart-total" class="text-white text-2xl font-bold tracking-tight">$0.00</p>
+                           <span class="material-symbols-outlined text-primary text-sm">expand_less</span>
+                       </div>
+                   </div>
+                   <div class="px-6 pb-6 pt-2">
+                       <button id="btn-submit" onclick="app.submitOrder()" class="relative group w-full flex items-center justify-between bg-primary hover:bg-primary-dark text-white rounded-xl h-14 px-6 shadow-glow transition-all active:scale-[0.98] grayscale opacity-50 pointer-events-none">
+                           <div class="flex items-center gap-3"><div id="cart-count" class="flex h-7 w-7 items-center justify-center rounded-full bg-white text-primary font-bold text-xs">0</div><span id="btn-text" class="font-bold text-sm tracking-widest uppercase">Enviar Comanda</span></div>
+                           <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+                       </button>
+                   </div>
+               </div>
+           </div>
+       </section>
+
+
+       <dialog id="modal-summary" class="bg-surface-dark text-white p-0 rounded-2xl w-full max-w-sm m-auto z-[80] border border-white/10 backdrop:bg-black/90 shadow-2xl">
+           <div class="p-5 border-b border-white/10 flex justify-between items-center bg-card-dark">
+               <div class="flex items-center gap-2">
+                   <span class="material-symbols-outlined text-primary">receipt_long</span>
+                   <h3 class="font-bold text-lg">Cuenta Mesa</h3>
+               </div>
+               <button onclick="document.getElementById('modal-summary').close()" class="text-slate-400"><span class="material-symbols-outlined">close</span></button>
+           </div>
+           <div class="p-5 max-h-[60vh] overflow-y-auto">
+               <div id="summary-content" class="space-y-3"></div>
+               <div class="mt-6 pt-4 border-t border-white/10 flex justify-between items-end">
+                   <p class="text-xs text-slate-400 uppercase tracking-widest">Total Confirmado</p>
+                   <p id="summary-total" class="text-2xl font-bold text-white">$0.00</p>
+               </div>
+           </div>
+       </dialog>
+
+
+       <dialog id="modal-cart" class="bg-surface-dark text-white p-0 rounded-t-2xl w-full max-w-md fixed bottom-0 left-0 right-0 m-auto z-[60] border-t border-white/10 backdrop:bg-black/80 transition-transform translate-y-full">
+           <div class="p-4 border-b border-white/10 flex justify-between items-center bg-card-dark">
+               <h3 class="font-bold text-lg">En Curso</h3>
+               <button onclick="document.getElementById('modal-cart').close()" class="text-slate-400"><span class="material-symbols-outlined">close</span></button>
+           </div>
+           <div id="cart-items-list" class="p-4 max-h-[50vh] overflow-y-auto space-y-3"></div>
+           <div class="p-4 border-t border-white/10 bg-card-dark flex justify-between items-center">
+               <span class="text-slate-400 font-bold uppercase text-xs">Total</span>
+               <span id="cart-modal-total" class="text-2xl font-bold text-white">$0.00</span>
+           </div>
+       </dialog>
+
+
+       <div id="modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+           <div class="bg-surface-dark border border-white/10 rounded-[2rem] p-8 max-w-xs w-full text-center shadow-2xl relative overflow-hidden">
+               <div class="size-20 rounded-full bg-status-green/10 text-status-green flex items-center justify-center mx-auto mb-6 border border-status-green/20"><span class="material-symbols-outlined text-4xl">check_circle</span></div>
+               <h3 class="text-2xl font-bold text-white mb-2">¡Enviado!</h3>
+               <p class="text-slate-400 text-sm font-medium leading-relaxed">Pedido registrado en cocina.</p>
+           </div>
+       </div>
+
+
+       <div id="modal-details" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md p-0 sm:p-4 animate-fade-in">
+           <div class="relative bg-surface-dark w-full max-w-sm rounded-t-[2rem] sm:rounded-[2rem] border-t sm:border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+               <button onclick="app.closeDetails()" class="absolute top-4 right-4 z-10 size-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors backdrop-blur-sm"><span class="material-symbols-outlined text-lg">close</span></button>
+               <div class="relative h-72 w-full shrink-0"><img id="detail-img" src="" class="w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-surface-dark via-transparent to-transparent"></div></div>
+               <div class="p-6 pt-2 flex flex-col gap-4 overflow-y-auto">
+                   <div class="flex justify-between items-start">
+                       <div><span id="detail-cat" class="text-[10px] font-bold text-primary uppercase tracking-widest border border-primary/20 px-2 py-0.5 rounded">CATEGORÍA</span><h2 id="detail-name" class="text-3xl font-bold text-white leading-tight mt-2 font-display">Nombre</h2></div>
+                       <p id="detail-price" class="text-xl font-bold text-white bg-white/5 px-3 py-1 rounded-lg border border-white/5">$0</p>
+                   </div>
+                   <div class="space-y-2"><p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Descripción</p><p id="detail-desc" class="text-sm text-slate-300 leading-relaxed font-light">...</p></div>
+                   <button id="detail-add-btn" class="mt-4 w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-neon-blue transition-all active:scale-95 uppercase tracking-widest text-sm"><span class="material-symbols-outlined">add_circle</span> Agregar al Pedido</button>
+               </div>
+           </div>
+       </div>
+   </div>
+
+
+   <script>
+       const CONFIG = {
+           // TU URL (LA QUE TERMINA EN /exec)
+           apiUrl: "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec",
+           staff: [], menu: [], activeOrders: [],
+           tables: [
+               { id: "T-01", zona: "Salón", guest: 4 }, { id: "T-02", zona: "Salón", guest: 2 },
+               { id: "T-03", zona: "Salón", guest: 6 }, { id: "T-04", zona: "Salón", guest: 4 },
+               { id: "T-10", zona: "Terraza", guest: 2 }, { id: "T-11", zona: "Terraza", guest: 2 },
+               { id: "BAR", zona: "Barra", guest: 1 },
+           ]
+       };
+
+
+       const STATE = { waiter: null, table: null, cart: [], category: 'Todos', zone: 'Salón', guests: 1, orderId: null, timers: {}, serverItems: [], tempUserId: null, pinBuffer: "", pinMode: 'LOGIN', attendanceTimers: {} };
+
+
+       const app = {
+           init: async () => {
+               await app.loadData();
+               await app.refreshTables();
+               document.getElementById('loader').style.opacity = '0';
+               setTimeout(() => { document.getElementById('loader').style.display = 'none'; document.getElementById('app').style.opacity = '1'; }, 500);
+               app.renderWaiters(); app.renderZones(); app.renderTables();
+               setInterval(app.refreshTables, 15000);
+           },
+
+
+           manualRefresh: async () => {
+               const btn = document.querySelector('#btn-refresh span');
+               btn.classList.add('spin-fast');
+               try { CONFIG.activeOrders = []; await app.refreshTables(); }
+               catch(e) { alert("No se pudo sincronizar"); }
+               finally { setTimeout(() => btn.classList.remove('spin-fast'), 1000); }
+           },
+
+
+           loadData: async () => {
+               try {
+                   const ts = Date.now();
+                   const [resMenu, resStaff] = await Promise.all([
+                       fetch(`${CONFIG.apiUrl}?action=get_menu&t=${ts}`),
+                       fetch(`${CONFIG.apiUrl}?action=get_staff&t=${ts}`)
+                   ]);
+                   const menuData = await resMenu.json();
+                   CONFIG.menu = menuData.map(m => ({ id: m.id, name: m.name, price: Number(m.price), cat: m.category, img: m.image || "https://via.placeholder.com/300?text=Sin+Foto", desc: m.description }));
+                   CONFIG.staff = await resStaff.json();
+                   app.renderWaiters();
+                   document.getElementById('view-waiter').classList.remove('hidden');
+               } catch (e) { console.error(e); alert("Error de Red."); }
+           },
+
+
+           refreshTables: async () => {
+               try {
+                   const res = await fetch(`${CONFIG.apiUrl}?action=get_caja_orders&t=${Date.now()}`);
+                   CONFIG.activeOrders = await res.json();
+                   app.renderTables();
+               } catch(e) { console.error("Error sync", e); }
+           },
+
+
+           switchView: (id) => {
+               document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+               document.querySelectorAll('section').forEach(el => el.classList.remove('flex'));
+               document.getElementById(`view-${id}`).classList.remove('hidden');
+               document.getElementById(`view-${id}`).classList.add('flex');
+               window.scrollTo(0,0);
+           },
+
+
+           renderWaiters: () => {
+               const container = document.getElementById('waiter-grid');
+               const safeStaff = CONFIG.staff.filter(u => u.active === 'ACTIVO' && u.role !== 'ADMIN');
+               if (safeStaff.length === 0) { container.innerHTML = '<p class="col-span-full text-center text-gray-500">No hay personal disponible.</p>'; return; }
+               container.innerHTML = safeStaff.map(s => {
+                   const status = localStorage.getItem(`status_mozo_${s.id}`) || "Activo";
+                   // Aseguramos que la key sea string
+                   const timerKey = String(s.id);
+                   const isSaving = STATE.attendanceTimers[timerKey] !== undefined;
+                   let st = {
+                       "Activo": { color: "bg-emerald-500", text: "ACTIVO", opacity: "opacity-100", icon: "pause_circle", border: "hover:border-primary/50" },
+                       "Descanso": { color: "bg-amber-500", text: "DESCANSO", opacity: "opacity-100 grayscale-[0.8]", icon: "play_circle", border: "border-amber-500/50" },
+                       "Franco": { color: "bg-red-500", text: "FRANCO", opacity: "opacity-40 grayscale pointer-events-none-except-btn", icon: "lock_open", border: "border-red-900" }
+                   }[status];
+                   const savingIndicator = isSaving ? `<div class="absolute top-4 left-4 z-30 flex size-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full size-3 bg-amber-500 shadow-[0_0_10px_#f59e0b]"></span></div>` : '';
+                   return `<div onclick="app.promptPin('${s.id}', 'LOGIN')" class="group relative flex flex-col overflow-hidden bg-card-dark rounded-2xl border border-white/5 ${st.border} cursor-pointer shadow-lg active:scale-95 transition-all ${st.opacity}">${savingIndicator}<button onclick="event.stopPropagation(); app.promptPin('${s.id}', 'STATUS')" class="absolute top-3 right-3 z-20 size-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-white hover:text-black transition-colors backdrop-blur-md border border-white/20 shadow-lg pointer-events-auto"><span class="material-symbols-outlined text-[20px]">${st.icon}</span></button><div class="aspect-square w-full relative"><img src="${s.image || s.img || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent"></div><div class="absolute bottom-3 left-3"><p class="text-white font-bold text-lg leading-none">${s.name}</p><div class="flex items-center gap-2 mt-2"><span class="size-2.5 rounded-full ${st.color} shadow-[0_0_10px_currentColor]"></span><p class="text-xs text-white/90 font-bold tracking-widest uppercase">${st.text}</p></div></div></div></div>`;
+               }).join('');
+           },
+
+
+           promptPin: (userId, mode) => { app.tempUserId = userId; app.pinMode = mode; app.resetPin(); document.getElementById('modal-pin').showModal(); },
+           addPin: (num) => { if(app.pinBuffer.length < 4) { app.pinBuffer += num; app.updatePinDots(); } if(app.pinBuffer.length === 4) setTimeout(() => app.validatePin(), 200); },
+           resetPin: () => { app.pinBuffer = ""; app.updatePinDots(); },
+           updatePinDots: () => { for(let i=1; i<=4; i++) document.getElementById(`dot-${i}`).className = i <= app.pinBuffer.length ? "size-3 rounded-full bg-primary transition-colors" : "size-3 rounded-full bg-white/10 transition-colors"; },
+          
+           // VALIDAR PIN Y GESTIONAR ASISTENCIA
+           validatePin: () => {
+              const user = CONFIG.staff.find(u => String(u.id) === String(app.tempUserId));
+             
+              // Validación de PIN
+              if(user && String(user.pin).trim() === String(app.pinBuffer).trim()) {
+                  document.getElementById('modal-pin').close();
+                 
+                  // MODO LOGIN (Ingreso al sistema)
+                  if (app.pinMode === 'LOGIN') {
+                      if (String(user.role).toUpperCase() === "COCINA") { window.location.href = "cocina.html"; return; }
+                      const st = localStorage.getItem(`status_mozo_${user.id}`) || "Activo";
+                      if (st === "Franco") { alert("Usuario en FRANCO. Cambie su estado primero."); return; }
+                      app.login(user);
+                 
+                  // MODO STATUS (Cambio de estado Activo/Descanso/Franco)
+                  } else {
+                      const current = localStorage.getItem(`status_mozo_${user.id}`) || "Activo";
+                      // Ciclo de estados: Activo -> Descanso -> Franco -> Activo
+                      const next = current === "Activo" ? "Descanso" : (current === "Descanso" ? "Franco" : "Activo");
+                     
+                      // 1. Guardar visualmente de inmediato para que el mozo vea el cambio
+                      localStorage.setItem(`status_mozo_${user.id}`, next);
+                      app.renderWaiters();
+
+
+                      // 2. Lógica de "Debounce" (Espera 45s antes de enviar al Sheets)
+                      if (STATE.attendanceTimers[user.id]) {
+                          console.log(`Cancelando envío previo para ${user.name}...`);
+                          clearTimeout(STATE.attendanceTimers[user.id]);
+                      }
+
+
+                      console.log(`Programando envío de estado '${next}' para ${user.name} en 45 segundos...`);
+                     
+                      STATE.attendanceTimers[user.id] = setTimeout(() => {
+                          app.logAttendance(user.name, next);
+                          delete STATE.attendanceTimers[user.id];
+                          // Opcional: Volver a renderizar para asegurar sincronía visual
+                          app.renderWaiters();
+                      }, 45000); // 45000 ms = 45 segundos
+                  }
+              } else {
+                  alert("PIN Incorrecto");
+                  app.resetPin();
+              }
+          },
+
+
+          // FUNCIÓN CORREGIDA
+          logAttendance: async (name, status) => {
+              console.log(`📡 ENVIANDO ASISTENCIA: ${name} -> ${status}`);
+              try {
+                  await fetch(CONFIG.apiUrl, {
+                      method: 'POST',
+                      mode: 'no-cors', // Mantenemos no-cors para evitar bloqueos
+                      headers: {'Content-Type': 'text/plain;charset=utf-8'}, // Header corregido para igualar submitOrder
+                      body: JSON.stringify({ type: 'log_attendance', name: name, status: status })
+                  });
+                  console.log("✅ Asistencia enviada correctamente.");
+              } catch(e){
+                  console.error("❌ Error enviando asistencia:", e);
+              }
+          },
+
+
+           login: (user) => { STATE.waiter = user; document.getElementById('active-waiter-name').innerText = user.name; document.getElementById('active-waiter-img').src = user.image || user.img || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'; app.switchView('tables'); },
+           logout: () => { if(STATE.cart.length > 0 && !confirm("¿Descartar pedido?")) return; STATE.cart = []; location.reload(); },
+
+
+           renderZones: () => { const zones = [...new Set(CONFIG.tables.map(t => t.zona))]; document.getElementById('zone-filters').innerHTML = zones.map(z => `<button onclick="app.filterZone('${z}')" class="flex-none px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border ${STATE.zone === z ? 'bg-primary text-white border-primary shadow-neon-blue' : 'bg-surface-dark text-slate-400 border-white/5 hover:bg-white/5'}">${z}</button>`).join(''); },
+           filterZone: (z) => { STATE.zone = z; app.renderZones(); app.renderTables(); },
+          
+           renderTables: () => {
+               const tables = CONFIG.tables.filter(t => t.zona === STATE.zone);
+               document.getElementById('tables-grid').innerHTML = tables.map(t => {
+                   const serverOrder = CONFIG.activeOrders.find(o => o.mesa === t.id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(o.status));
+                   let status = "LIBRE", color = "text-status-green", icon = "check_circle", border = "border-status-green/20", glow = "";
+                   let idBadge = "";
+                   if (serverOrder) {
+                       status = "OCUPADA"; color = "text-primary"; icon = "person"; border = "border-primary/50"; glow = "shadow-neon-blue";
+                       idBadge = `<div class="absolute top-0 right-0 bg-primary shadow-lg rounded-bl-xl px-2 py-1 z-10 border-b border-l border-white/20"><span class="text-white font-bold text-xs tracking-wider">#${serverOrder.id}</span></div>`;
+                   }
+                   return `<div onclick="app.selectTable('${t.id}')" class="relative overflow-hidden flex flex-col justify-between h-48 gap-2 rounded-2xl border ${border} bg-card-dark p-4 transition-all active:scale-[0.97] cursor-pointer ${glow}">${idBadge}<div class="flex justify-between items-start mt-2"><div class="size-10 rounded-full bg-black/30 ${color} border border-white/5 flex items-center justify-center shadow-inner"><span class="material-symbols-outlined">${icon}</span></div><div class="flex flex-col items-end gap-1.5 pt-1"><span class="text-[10px] font-bold tracking-widest ${color}">${status}</span></div></div><div><h3 class="text-2xl font-bold text-white tracking-tight">${t.id}</h3><p class="text-xs text-slate-400 flex items-center gap-1.5 font-medium mt-1"><span class="material-symbols-outlined text-[14px]">group</span> ${t.guest} Pers.</p></div></div>`;
+               }).join('');
+           },
+          
+           selectTable: (id) => {
+               STATE.table = id;
+               const serverOrder = CONFIG.activeOrders.find(o => o.mesa === id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(o.status));
+               if (serverOrder) {
+                   STATE.orderId = serverOrder.id; STATE.guests = serverOrder.personas || "?";
+                   STATE.serverItems = serverOrder.items ? String(serverOrder.items).split("|") : [];
+               } else {
+                   let pax = prompt(`Mesa ${id}: Pax?`, "2"); if (pax === null) return;
+                   STATE.orderId = "PENDIENTE"; STATE.guests = pax; STATE.serverItems = [];
+               }
+               document.getElementById('menu-table-id').innerText = `MESA ${id}`;
+               document.getElementById('menu-order-id').innerText = `ORDEN: ${STATE.orderId}`;
+               document.getElementById('correction-panel').classList.add('hidden');
+               STATE.cart = []; app.updateCart(); app.switchView('menu'); app.renderCategories();
+           },
+
+
+           showTableSummary: () => {
+               if (!STATE.serverItems || STATE.serverItems.length === 0) { alert("Mesa sin pedidos confirmados."); return; }
+               const container = document.getElementById('summary-content');
+               let estimatedTotal = 0;
+               const htmlList = STATE.serverItems.map(itemStr => {
+                   let cleanName = itemStr.split("[")[0].trim();
+                   const isAnulado = itemStr.includes("[ANULADO]");
+                   const menuItem = CONFIG.menu.find(m => m.name === cleanName);
+                   let price = menuItem ? menuItem.price : 0;
+                   if (isAnulado) price = -Math.abs(price);
+                   estimatedTotal += price;
+                   return `<div class="flex justify-between items-center pb-2 border-b border-white/5 last:border-0"><div class="flex flex-col"><span class="text-sm font-medium ${isAnulado ? 'text-red-400 line-through' : 'text-white'}">${itemStr}</span></div><span class="text-sm font-bold ${isAnulado ? 'text-red-400' : 'text-primary'}">${isAnulado ? '-' : ''}$${Math.abs(price)}</span></div>`;
+               }).join('');
+               container.innerHTML = htmlList;
+               document.getElementById('summary-total').innerText = `$${Math.max(0, estimatedTotal).toFixed(2)}`;
+               document.getElementById('modal-summary').showModal();
+           },
+
+
+           toggleCorrectionMode: () => {
+               const panel = document.getElementById('correction-panel'); const list = document.getElementById('correction-list');
+               if (!STATE.serverItems || STATE.serverItems.length === 0) { alert("No hay pedidos confirmados para corregir."); return; }
+               if (panel.classList.contains('hidden')) {
+                   panel.classList.remove('hidden');
+                   list.innerHTML = STATE.serverItems.map(itemStr => {
+                       const cleanName = itemStr.trim();
+                       return `<div class="flex justify-between items-center bg-surface-dark p-3 rounded-xl border border-white/5"><span class="text-sm font-medium text-white/80">${cleanName}</span><button onclick="app.addCorrectionItem('${cleanName}')" class="bg-red-500/20 text-red-400 border border-red-500/50 px-3 py-1.5 rounded-lg text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition-colors">ANULAR</button></div>`;
+                   }).join('');
+               } else { panel.classList.add('hidden'); }
+           },
+
+
+           addCorrectionItem: (nameStr) => {
+               if (STATE.cart.some(i => i.price > 0)) { alert("⚠️ SEGURIDAD:\nTienes pedidos nuevos en el carrito.\nEnvíalos antes de hacer correcciones."); return; }
+               let baseName = nameStr.split("[")[0].trim();
+               const menuItem = CONFIG.menu.find(m => m.name === baseName);
+               const price = menuItem ? menuItem.price : 0;
+               STATE.cart.push({ id: Date.now(), name: `[ANULADO] ${baseName}`, price: -Math.abs(price), note: "CORRECCIÓN MOZO", uid: Date.now() });
+               app.updateCart();
+               document.getElementById('correction-panel').classList.add('hidden');
+           },
+
+
+           renderCategories: () => { const cats = ['Todos', ...new Set(CONFIG.menu.map(i => i.cat))]; document.getElementById('category-chips').innerHTML = cats.map(c => `<button onclick="app.filter('${c}')" class="shrink-0 rounded-lg px-4 py-2 border text-xs font-bold uppercase tracking-wider transition-all ${STATE.category === c ? 'bg-primary text-white border-primary shadow-neon-blue' : 'text-slate-400 border-white/10 bg-surface-dark'}">${c}</button>`).join(''); app.renderMenu(); },
+           filter: (cat) => { STATE.category = cat; app.renderCategories(); },
+          
+           renderMenu: () => {
+               const items = STATE.category === 'Todos' ? CONFIG.menu : CONFIG.menu.filter(i => i.cat === STATE.category);
+               document.getElementById('menu-grid').innerHTML = items.map(item => `
+                   <div class="flex flex-col gap-3 group">
+                       <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-surface-dark ring-1 ring-white/5 cursor-pointer shadow-lg active:scale-95 transition-transform" onclick="app.showDetails(${item.id})">
+                           <img src="${item.img}" class="absolute inset-0 w-full h-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div><div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md rounded-lg px-2 py-1 text-xs font-bold text-white border border-white/10">$${item.price}</div>
+                       </div>
+                       <div><p class="text-white font-bold uppercase text-sm truncate leading-tight">${item.name}</p><div class="flex gap-2 mt-2"><input id="note-${item.id}" placeholder="Nota..." class="w-full bg-surface-dark border-none rounded-lg text-xs text-white placeholder-slate-600 focus:ring-1 focus:ring-primary"><button onclick="event.stopPropagation(); app.add(${item.id})" class="size-9 shrink-0 bg-white/5 text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors border border-white/5"><span class="material-symbols-outlined text-[20px]">add</span></button></div></div>
+                   </div>`).join('');
+           },
+          
+           showDetails: (id) => { const item = CONFIG.menu.find(i => i.id === id); document.getElementById('detail-img').src = item.img || ''; document.getElementById('detail-cat').innerText = item.cat; document.getElementById('detail-name').innerText = item.name; document.getElementById('detail-price').innerText = `$${item.price}`; document.getElementById('detail-desc').innerText = item.desc; document.getElementById('detail-add-btn').onclick = () => { app.add(item.id); app.closeDetails(); }; document.getElementById('modal-details').classList.remove('hidden'); },
+           closeDetails: () => { document.getElementById('modal-details').classList.add('hidden'); },
+          
+           add: (id) => {
+               if (STATE.cart.some(i => i.price < 0)) { alert("⚠️ SEGURIDAD:\nNo puedes mezclar Pedidos con Correcciones.\nEnvía la anulación primero."); return; }
+               const item = CONFIG.menu.find(i => i.id === id);
+               const noteInput = document.getElementById(`note-${id}`);
+               const note = noteInput ? noteInput.value : "";
+               STATE.cart.push({...item, note, uid:Date.now()});
+               if(noteInput) noteInput.value = ''; app.updateCart();
+           },
+          
+           updateCart: () => { const total = STATE.cart.reduce((sum, i) => sum + i.price, 0); document.getElementById('cart-count').innerText = STATE.cart.length; document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`; document.getElementById('cart-summary-text').innerText = STATE.cart.length ? `${STATE.cart.length} items` : "Vacío"; document.getElementById('cart-modal-total').innerText = `$${total.toFixed(2)}`; document.getElementById('cart-items-list').innerHTML = STATE.cart.map((i, idx) => `<div class="flex justify-between items-start border-b border-white/5 pb-2"><div><p class="font-bold text-white text-sm">${i.name}</p>${i.note ? `<p class="text-xs text-primary font-mono bg-primary/10 px-1 rounded inline-block mt-1">${i.note}</p>` : ''}</div><div class="flex items-center gap-3"><span class="font-bold text-white text-sm">$${i.price}</span><button onclick="app.removeItem(${idx})" class="text-red-400 hover:text-white"><span class="material-symbols-outlined text-sm">delete</span></button></div></div>`).join(''); const btn = document.getElementById('btn-submit'); if(STATE.cart.length > 0) { btn.classList.remove('grayscale', 'opacity-50', 'pointer-events-none'); } else { btn.classList.add('grayscale', 'opacity-50', 'pointer-events-none'); } },
+           removeItem: (idx) => { STATE.cart.splice(idx, 1); app.updateCart(); if(STATE.cart.length === 0) document.getElementById('modal-cart').close(); },
+           toggleCartPreview: () => { if(STATE.cart.length > 0) document.getElementById('modal-cart').showModal(); },
+          
+           submitOrder: async () => {
+               if(STATE.cart.length === 0) return;
+               const btn = document.getElementById('btn-submit'); const btnText = document.getElementById('btn-text'); const origText = btnText.innerText;
+               btn.classList.add('opacity-50', 'pointer-events-none'); btnText.innerText = "REGISTRANDO...";
+               const currentGuests = localStorage.getItem(`personas_mesa_${STATE.table}`) || STATE.guests || "1";
+               const itemsStr = STATE.cart.map(i => `${i.name}${i.note ? ` [${i.note}]` : ''}`).join(" | ");
+               const total = STATE.cart.reduce((sum, i) => sum + i.price, 0);
+               const payload = { type: 'order', id: "PENDIENTE", mozo: STATE.waiter.name, mesa: STATE.table, personas: currentGuests, items: itemsStr, total: total };
+
+
+               try {
+                   const response = await fetch(CONFIG.apiUrl, { method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(payload) });
+                   const data = await response.json();
+                   const serverId = data.generatedId;
+
+
+                   if (serverId) {
+                       const newOrder = { id: serverId, mesa: STATE.table, status: "PENDIENTE", items: itemsStr, mozo: STATE.waiter.name, total: total, personas: currentGuests };
+                       CONFIG.activeOrders = CONFIG.activeOrders.filter(o => o.mesa !== STATE.table);
+                       CONFIG.activeOrders.push(newOrder);
+                       document.getElementById('modal').classList.remove('hidden'); document.getElementById('modal-cart').close();
+                       setTimeout(() => { document.getElementById('modal').classList.add('hidden'); STATE.cart = []; app.updateCart(); btn.classList.remove('opacity-50', 'pointer-events-none'); btnText.innerText = origText; app.renderTables(); app.switchView('tables'); }, 1500);
+                   } else { throw new Error("ID no generado"); }
+               } catch (e) {
+                   document.getElementById('modal-cart').close(); STATE.cart = []; app.switchView('tables'); btn.classList.remove('opacity-50', 'pointer-events-none'); btnText.innerText = origText; app.manualRefresh();
+               }
+           }
+       };
+       document.addEventListener('DOMContentLoaded', app.init);
+   </script>
+</body>
+</html>

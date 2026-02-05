@@ -1,0 +1,498 @@
+﻿<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+   <meta charset="utf-8"/>
+   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+   <title>Caja Central | Restaurante360</title>
+  
+   <link href="https://fonts.googleapis.com" rel="preconnect"/>
+   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+   <script>
+       tailwind.config = {
+           darkMode: "class",
+           theme: {
+               extend: {
+                   colors: { "primary": "#6366f1", "primary-dark": "#4f46e5", "background-dark": "#0f1115", "card-dark": "#1a1d24", "danger": "#ef4444", "success": "#22c55e", "warning": "#f59e0b" },
+                   fontFamily: { "display": ["Space Grotesk", "sans-serif"], "body": ["Noto Sans", "sans-serif"] }
+               },
+           },
+       }
+   </script>
+   <style>
+       .hide-scrollbar::-webkit-scrollbar { display: none; }
+       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+       dialog::backdrop { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+   </style>
+</head>
+<body class="bg-[#f6f7f8] dark:bg-background-dark min-h-screen flex flex-col font-display text-white transition-colors duration-300">
+
+
+   <header class="sticky top-0 z-40 bg-[#14171c]/95 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shadow-lg">
+       <div class="flex items-center gap-4">
+           <div class="flex items-center justify-center size-10 rounded-full bg-primary/10 border border-primary/20 text-primary">
+               <span class="material-symbols-outlined">point_of_sale</span>
+           </div>
+           <div>
+               <h1 class="text-xl font-bold tracking-tight text-white leading-none">CAJA CENTRAL</h1>
+               <p class="text-xs text-gray-400 font-medium tracking-wide mt-0.5">Control de Cobros</p>
+           </div>
+       </div>
+       <div class="flex gap-2">
+           <button onclick="document.getElementById('modal-history').showModal(); app.renderHistory()" class="h-9 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 flex items-center gap-2 text-xs font-bold transition-all"><span class="material-symbols-outlined text-[16px]">history</span> Historial</button>
+           <button onclick="app.showEndOfDay()" class="h-9 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 flex items-center gap-2 text-xs font-bold transition-all"><span class="material-symbols-outlined text-[16px]">summarize</span> Arqueo</button>
+           <button onclick="app.fetchOrders()" class="h-9 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 text-sm font-bold flex items-center gap-2 transition-all"><span class="material-symbols-outlined text-[18px]">sync</span> Actualizar</button>
+       </div>
+   </header>
+
+
+   <main id="caja-container" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min pb-20">
+       <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50">
+           <span class="material-symbols-outlined text-4xl animate-spin mb-4 text-primary">progress_activity</span>
+           <p class="text-sm tracking-widest uppercase">Cargando sistema...</p>
+       </div>
+   </main>
+
+
+   <dialog id="modal-cobro" class="bg-card-dark text-white p-0 rounded-2xl w-full max-w-4xl backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto h-[90vh]">
+       <div class="flex h-full">
+          
+           <div class="w-2/3 flex flex-col border-r border-white/5">
+               <div class="p-6 border-b border-white/5 flex justify-between items-start bg-white/5">
+                   <div>
+                       <h2 class="text-3xl font-bold text-white">MESA <span id="modal-mesa" class="text-primary">--</span></h2>
+                       <div class="flex items-center gap-2 mt-1">
+                           <span class="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-gray-400">Orden #<span id="modal-id">--</span></span>
+                           <span id="modal-status-badge" class="bg-warning/20 text-warning border border-warning/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest hidden">⚠️ En Cocina</span>
+                       </div>
+                   </div>
+                   <div class="flex gap-2">
+                       <button onclick="app.addItemFlow()" class="h-10 px-4 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/20 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"><span class="material-symbols-outlined text-sm">add</span> Agregar</button>
+                       <button onclick="document.getElementById('modal-cobro').close()" class="size-10 rounded-lg bg-white/5 hover:text-red-400 transition-colors flex items-center justify-center"><span class="material-symbols-outlined">close</span></button>
+                   </div>
+               </div>
+
+
+               <div id="modal-items" class="flex-1 overflow-y-auto p-6 space-y-2"></div>
+
+
+               <div class="p-6 bg-black/20 border-t border-white/5">
+                   <div class="flex justify-between items-end">
+                       <div>
+                           <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Total a Pagar</p>
+                           <p id="modal-total" class="text-4xl font-bold text-white font-mono">$0.00</p>
+                       </div>
+                       <div class="flex gap-2">
+                           <button onclick="app.addTip()" class="h-10 px-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase text-success flex items-center gap-1"><span class="material-symbols-outlined text-sm">savings</span> Propina</button>
+                           <button onclick="app.addDiscount()" class="h-10 px-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase text-danger flex items-center gap-1"><span class="material-symbols-outlined text-sm">percent</span> Dscto.</button>
+                       </div>
+                   </div>
+               </div>
+           </div>
+
+
+           <div class="w-1/3 flex flex-col bg-[#16181d]">
+               <div class="p-6 flex-1 flex flex-col gap-3">
+                   <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Método de Pago</p>
+                  
+                   <button onclick="app.pay('EFECTIVO')" class="h-16 rounded-xl bg-success/10 hover:bg-success/20 border border-success/20 flex items-center justify-between px-6 group transition-all">
+                       <span class="font-bold text-success group-hover:scale-105 transition-transform">EFECTIVO</span>
+                       <span class="material-symbols-outlined text-success text-2xl">payments</span>
+                   </button>
+                  
+                   <button onclick="app.pay('TARJETA')" class="h-16 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 flex items-center justify-between px-6 group transition-all">
+                       <span class="font-bold text-primary group-hover:scale-105 transition-transform">TARJETA</span>
+                       <span class="material-symbols-outlined text-primary text-2xl">credit_card</span>
+                   </button>
+
+
+                   <button onclick="app.requestAdminAuth(() => app.pay('CORTESIA'))" class="h-16 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 flex items-center justify-between px-6 group transition-all">
+                       <span class="font-bold text-purple-400 group-hover:scale-105 transition-transform">CORTESÍA</span>
+                       <span class="material-symbols-outlined text-purple-400 text-2xl">verified_user</span>
+                   </button>
+
+
+                   <hr class="border-white/5 my-2">
+                  
+                   <button onclick="app.generatePreCheck()" class="h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center gap-2 text-sm font-bold text-gray-300">
+                       <span class="material-symbols-outlined">receipt_long</span> Ver Pre-Cuenta
+                   </button>
+
+
+                   <button onclick="document.getElementById('modal-calc').showModal()" class="h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center gap-2 text-sm font-bold text-gray-300">
+                       <span class="material-symbols-outlined">calculate</span> Calculadora
+                   </button>
+               </div>
+           </div>
+       </div>
+   </dialog>
+
+
+   <dialog id="modal-pin" class="bg-card-dark text-white p-6 rounded-2xl w-full max-w-xs backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto z-50">
+       <h3 class="text-center font-bold text-lg mb-4 text-primary">PIN ADMINISTRADOR</h3>
+       <input type="password" id="pin-input" readonly class="w-full bg-black/20 border border-white/10 rounded-lg h-12 text-center text-2xl tracking-[0.5em] mb-4 focus:ring-primary focus:border-primary">
+       <div class="grid grid-cols-3 gap-2">
+           <button onclick="app.typePin(1)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">1</button>
+           <button onclick="app.typePin(2)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">2</button>
+           <button onclick="app.typePin(3)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">3</button>
+           <button onclick="app.typePin(4)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">4</button>
+           <button onclick="app.typePin(5)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">5</button>
+           <button onclick="app.typePin(6)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">6</button>
+           <button onclick="app.typePin(7)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">7</button>
+           <button onclick="app.typePin(8)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">8</button>
+           <button onclick="app.typePin(9)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">9</button>
+           <button onclick="document.getElementById('modal-pin').close()" class="h-12 text-red-400 font-bold text-xs">CANCEL</button>
+           <button onclick="app.typePin(0)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">0</button>
+           <button onclick="document.getElementById('pin-input').value=''" class="h-12 text-gray-400"><span class="material-symbols-outlined">backspace</span></button>
+       </div>
+   </dialog>
+
+
+   <dialog id="modal-menu" class="bg-card-dark text-white p-0 rounded-2xl w-full max-w-2xl backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto h-[80vh]">
+       <div class="p-4 border-b border-white/10 flex justify-between items-center">
+           <h3 class="font-bold text-lg">Agregar Producto</h3>
+           <button onclick="document.getElementById('modal-menu').close()" class="text-gray-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+       </div>
+       <div id="menu-grid" class="p-4 grid grid-cols-3 gap-3 overflow-y-auto max-h-[70vh]"></div>
+   </dialog>
+
+
+   <dialog id="modal-calc" class="bg-card-dark text-white p-4 rounded-2xl w-full max-w-xs backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto">
+       <div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-500">CALCULADORA</span><button onclick="document.getElementById('modal-calc').close()"><span class="material-symbols-outlined text-sm">close</span></button></div>
+       <input id="calc-display" class="w-full bg-black/30 text-right text-2xl font-mono p-2 mb-2 rounded border border-white/10" readonly value="0">
+       <div class="grid grid-cols-4 gap-2">
+           <button onclick="app.calcOp('C')" class="col-span-1 bg-red-500/20 text-red-400 h-10 rounded font-bold">C</button>
+           <button onclick="app.calcOp('/')" class="bg-primary/20 text-primary h-10 rounded font-bold">/</button>
+           <button onclick="app.calcOp('*')" class="bg-primary/20 text-primary h-10 rounded font-bold">x</button>
+           <button onclick="app.calcOp('-')" class="bg-primary/20 text-primary h-10 rounded font-bold">-</button>
+           <button onclick="app.calcOp('7')" class="bg-white/5 h-10 rounded font-bold">7</button>
+           <button onclick="app.calcOp('8')" class="bg-white/5 h-10 rounded font-bold">8</button>
+           <button onclick="app.calcOp('9')" class="bg-white/5 h-10 rounded font-bold">9</button>
+           <button onclick="app.calcOp('+')" class="bg-primary/20 text-primary h-10 rounded font-bold row-span-2 flex items-center justify-center">+</button>
+           <button onclick="app.calcOp('4')" class="bg-white/5 h-10 rounded font-bold">4</button>
+           <button onclick="app.calcOp('5')" class="bg-white/5 h-10 rounded font-bold">5</button>
+           <button onclick="app.calcOp('6')" class="bg-white/5 h-10 rounded font-bold">6</button>
+           <button onclick="app.calcOp('1')" class="bg-white/5 h-10 rounded font-bold">1</button>
+           <button onclick="app.calcOp('2')" class="bg-white/5 h-10 rounded font-bold">2</button>
+           <button onclick="app.calcOp('3')" class="bg-white/5 h-10 rounded font-bold">3</button>
+           <button onclick="app.calcOp('=')" class="bg-success/20 text-success h-10 rounded font-bold row-span-2 flex items-center justify-center">=</button>
+           <button onclick="app.calcOp('0')" class="col-span-2 bg-white/5 h-10 rounded font-bold">0</button>
+           <button onclick="app.calcOp('.')" class="bg-white/5 h-10 rounded font-bold">.</button>
+       </div>
+   </dialog>
+
+
+   <dialog id="modal-history" class="bg-card-dark text-white p-6 rounded-2xl w-full max-w-md backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto">
+       <div class="flex justify-between items-center mb-4"><h3 class="font-bold">Últimas Mesas Cerradas</h3><button onclick="document.getElementById('modal-history').close()"><span class="material-symbols-outlined">close</span></button></div>
+       <div id="history-list" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+   </dialog>
+
+
+   <script>
+       const CONFIG = {
+           apiUrl: "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec"
+       };
+
+
+       const app = {
+           data: [], // Raw orders
+           staff: [], // For Auth
+           menu: [], // For Add Item
+           groupedOrders: {},
+           currentTableId: null,
+           pinCallback: null,
+
+
+           init: async () => {
+               await Promise.all([app.fetchOrders(), app.fetchStaff(), app.fetchMenu()]);
+               setInterval(app.fetchOrders, 15000);
+           },
+
+
+           fetchOrders: async () => {
+               try {
+                   const res = await fetch(`${CONFIG.apiUrl}?action=get_orders&t=${Date.now()}`);
+                   app.data = await res.json();
+                   app.processOrders();
+                   app.renderGrid();
+               } catch (e) { console.error(e); }
+           },
+           fetchStaff: async () => { try { const res = await fetch(`${CONFIG.apiUrl}?action=get_staff`); app.staff = await res.json(); } catch(e){} },
+           fetchMenu: async () => { try { const res = await fetch(`${CONFIG.apiUrl}?action=get_menu`); app.menu = await res.json(); app.renderMenu(); } catch(e){} },
+
+
+           processOrders: () => {
+               app.groupedOrders = {};
+               // Filtrar solo lo activo (No ANULADO, No PAGADO, No CORTESIA)
+               const active = app.data.filter(o => !['ANULADO', 'PAGADO', 'CORTESIA'].includes(o.status));
+              
+               active.forEach(o => {
+                   if (!app.groupedOrders[o.id]) {
+                       app.groupedOrders[o.id] = {
+                           id: o.id, mesa: o.mesa, mozo: o.mozo,
+                           items: [], total: 0, hasPending: false,
+                           startTime: o.time
+                       };
+                   }
+                   const items = app.parseItems(o.items);
+                   const rowTotal = Number(o.total);
+                  
+                   // Lógica Semáforo: Si algo no está entregado, alerta
+                   if (o.status === 'PENDIENTE' || o.status === 'LISTO') app.groupedOrders[o.id].hasPending = true;
+                  
+                   // Agregar items
+                   items.forEach(i => app.groupedOrders[o.id].items.push({name: i, price: 0})); // Precio desglosado no disponible en items string, usamos total fila
+                  
+                   // Truco: Como el total viene por fila, sumamos el total de la fila al total de la mesa
+                   app.groupedOrders[o.id].total += rowTotal;
+               });
+           },
+
+
+           renderGrid: () => {
+               const container = document.getElementById('caja-container');
+               const orders = Object.values(app.groupedOrders);
+              
+               if (orders.length === 0) {
+                   container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-500"><span class="material-symbols-outlined text-6xl mb-4 text-primary">point_of_sale</span><p class="text-xl font-bold">Sin cuentas pendientes</p></div>`;
+                   return;
+               }
+
+
+               container.innerHTML = orders.map(o => `
+                   <div onclick="app.openModal('${o.id}')" class="bg-card-dark rounded-xl border border-white/5 p-5 cursor-pointer hover:border-primary/50 transition-all shadow-lg active:scale-[0.98] group relative overflow-hidden">
+                       ${o.hasPending ? '<div class="absolute top-0 right-0 p-2"><span class="animate-pulse size-3 rounded-full bg-warning block shadow-[0_0_10px_#f59e0b]"></span></div>' : '<div class="absolute top-0 right-0 p-2"><span class="size-3 rounded-full bg-success block shadow-[0_0_10px_#22c55e]"></span></div>'}
+                       <div class="flex justify-between items-start mb-4">
+                           <div><h3 class="text-2xl font-bold text-white">MESA ${o.mesa}</h3><p class="text-xs text-primary font-bold tracking-widest mt-1">#${o.id}</p></div>
+                       </div>
+                       <p class="text-3xl font-bold text-white font-mono mb-4">$${o.total.toFixed(2)}</p>
+                       <div class="flex items-center gap-2 text-xs text-gray-500 font-bold uppercase tracking-wider border-t border-white/5 pt-3">
+                           <span class="material-symbols-outlined text-[16px]">person</span> ${o.mozo}
+                       </div>
+                   </div>`).join('');
+           },
+
+
+           openModal: (id) => {
+               app.currentTableId = id;
+               const o = app.groupedOrders[id];
+               document.getElementById('modal-mesa').innerText = o.mesa;
+               document.getElementById('modal-id').innerText = o.id;
+               document.getElementById('modal-total').innerText = `$${o.total.toFixed(2)}`;
+              
+               // Mostrar alerta si hay pendientes
+               const badge = document.getElementById('modal-status-badge');
+               if(o.hasPending) { badge.classList.remove('hidden'); badge.innerText = "⚠️ PEDIDOS EN COCINA"; }
+               else { badge.classList.add('hidden'); }
+
+
+               // Renderizar items agrupados
+               // Recuperamos las filas originales para tener los precios correctos para "Borrar"
+               const rawRows = app.data.filter(r => r.id == id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(r.status));
+              
+               document.getElementById('modal-items').innerHTML = rawRows.map(row => {
+                   const itemsText = row.items.replace(/\|/g, ', ');
+                   // Si el precio es negativo, es descuento o corrección
+                   const isNeg = row.total < 0;
+                   const colorClass = isNeg ? 'text-danger' : 'text-gray-300';
+                   return `
+                   <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                       <div><p class="text-sm font-bold ${colorClass}">${itemsText}</p><p class="text-[10px] text-gray-500 font-mono">${row.status}</p></div>
+                       <div class="flex items-center gap-3">
+                           <span class="font-bold font-mono ${colorClass}">${isNeg ? '' : '+'}$${Number(row.total).toFixed(2)}</span>
+                           <button onclick="app.deleteRow('${row.items}', ${row.total})" class="text-gray-500 hover:text-danger" title="Eliminar"><span class="material-symbols-outlined text-lg">delete</span></button>
+                       </div>
+                   </div>`;
+               }).join('');
+
+
+               document.getElementById('modal-cobro').showModal();
+           },
+
+
+           // --- ACCIONES FINANCIERAS ---
+           pay: async (method) => {
+               if(!app.currentTableId) return;
+               const o = app.groupedOrders[app.currentTableId];
+               if(!confirm(`¿Cerrar Mesa ${o.mesa} como ${method}? Total: $${o.total.toFixed(2)}`)) return;
+
+
+               document.getElementById('modal-cobro').close();
+               app.saveToHistory(o, method); // Guardar historial local
+              
+               // Optimismo
+               delete app.groupedOrders[app.currentTableId];
+               app.renderGrid();
+
+
+               await fetch(CONFIG.apiUrl, {
+                   method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'},
+                   body: JSON.stringify({ type: 'complete_order', id: o.id, finalStatus: method === 'CORTESIA' ? 'CORTESIA' : `PAGADO (${method})` })
+               });
+           },
+
+
+           // Eliminar = Agregar contra-partida negativa (Requiere Admin)
+           deleteRow: (itemName, price) => {
+               app.requestAdminAuth(async () => {
+                   const negPrice = -Math.abs(price);
+                   await app.sendGhostItem(`[ANULADO] ${itemName}`, negPrice);
+                   alert("Ítem anulado correctamente.");
+                   document.getElementById('modal-cobro').close();
+                   app.fetchOrders();
+               });
+           },
+
+
+           addTip: () => {
+               const amount = prompt("Monto de Propina:");
+               if(amount && !isNaN(amount)) {
+                   app.sendGhostItem("*** PROPINA MOZO ***", parseFloat(amount));
+                   document.getElementById('modal-cobro').close();
+                   setTimeout(app.fetchOrders, 1000); // Dar tiempo a refrescar
+               }
+           },
+
+
+           addDiscount: () => {
+               app.requestAdminAuth(() => {
+                   const amount = prompt("Monto de Descuento (Positivo):");
+                   if(amount && !isNaN(amount)) {
+                       app.sendGhostItem("*** DESCUENTO ***", -Math.abs(parseFloat(amount)));
+                       document.getElementById('modal-cobro').close();
+                       setTimeout(app.fetchOrders, 1000);
+                   }
+               });
+           },
+
+
+           addItemFlow: () => {
+               document.getElementById('modal-menu').showModal();
+           },
+
+
+           addToOrder: async (item) => {
+               if(!confirm(`¿Agregar ${item.name} a la cuenta?`)) return;
+               await app.sendGhostItem(item.name, item.price, 'PENDIENTE'); // Va a cocina
+               document.getElementById('modal-menu').close();
+               document.getElementById('modal-cobro').close();
+               setTimeout(app.fetchOrders, 1000);
+           },
+
+
+           // Envia un item directo (usado para propinas, descuentos, anulaciones o items nuevos)
+           sendGhostItem: async (name, price, initialStatus = 'ENTREGADO') => {
+               // Si es PENDIENTE va a cocina. Si es ENTREGADO, solo suma a la cuenta.
+               const o = app.groupedOrders[app.currentTableId];
+              
+               // 1. Crear Orden
+               await fetch(CONFIG.apiUrl, {
+                   method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'},
+                   body: JSON.stringify({ type: 'order', id: o.id, mozo: 'CAJA', mesa: o.mesa, personas: 1, items: name, total: price })
+               });
+
+
+               // 2. Si es item financiero, cerrarlo inmediato para que no ensucie cocina
+               if(initialStatus === 'ENTREGADO') {
+                   // Esperamos un poco para asegurar orden (hacky pero necesario sin cambiar backend)
+                   setTimeout(async () => {
+                       await fetch(CONFIG.apiUrl, {
+                           method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'},
+                           body: JSON.stringify({ type: 'complete_order', id: o.id, finalStatus: 'ENTREGADO' })
+                       });
+                   }, 500);
+               }
+           },
+
+
+           // --- UTILS ---
+           renderMenu: () => {
+               document.getElementById('menu-grid').innerHTML = app.menu.map(i => `
+                   <div onclick='app.addToOrder(${JSON.stringify(i)})' class="bg-white/5 p-3 rounded border border-white/5 cursor-pointer hover:bg-white/10 active:scale-95 transition-all">
+                       <p class="font-bold text-sm text-white truncate">${i.name}</p>
+                       <p class="text-xs text-primary font-bold">$${i.price}</p>
+                   </div>`).join('');
+           },
+
+
+           requestAdminAuth: (callback) => {
+               app.pinCallback = callback;
+               document.getElementById('pin-input').value = "";
+               document.getElementById('modal-pin').showModal();
+           },
+
+
+           typePin: (num) => {
+               const inp = document.getElementById('pin-input');
+               if (inp.value.length < 4) inp.value += num;
+               if (inp.value.length === 4) app.validatePin();
+           },
+
+
+           validatePin: () => {
+               const pin = document.getElementById('pin-input').value;
+               const admin = app.staff.find(u => String(u.pin) === pin && u.role === 'ADMIN');
+               document.getElementById('modal-pin').close();
+               if (admin) {
+                   if (app.pinCallback) app.pinCallback();
+               } else {
+                   alert("PIN NO AUTORIZADO");
+               }
+           },
+
+
+           generatePreCheck: () => {
+               const o = app.groupedOrders[app.currentTableId];
+               const lines = [`MESA: ${o.mesa}`, `MOZO: ${o.mozo}`, `ORDEN: #${o.id}`, "----------------"];
+               app.data.filter(r => r.id == o.id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(r.status))
+                   .forEach(r => lines.push(`${r.items} ... $${r.total}`));
+               lines.push("----------------", `TOTAL: $${o.total.toFixed(2)}`);
+               alert(lines.join("\n"));
+           },
+
+
+           saveToHistory: (order, method) => {
+               const history = JSON.parse(localStorage.getItem('caja_history') || '[]');
+               history.unshift({ time: new Date().toLocaleTimeString(), mesa: order.mesa, total: order.total, method: method });
+               if(history.length > 10) history.pop();
+               localStorage.setItem('caja_history', JSON.stringify(history));
+           },
+
+
+           renderHistory: () => {
+               const h = JSON.parse(localStorage.getItem('caja_history') || '[]');
+               document.getElementById('history-list').innerHTML = h.length ? h.map(i => `
+                   <div class="flex justify-between border-b border-white/5 pb-2">
+                       <div><p class="font-bold">Mesa ${i.mesa}</p><p class="text-xs text-gray-500">${i.time} - ${i.method}</p></div>
+                       <p class="font-bold text-primary">$${i.total.toFixed(2)}</p>
+                   </div>`).join('') : '<p class="text-center text-gray-500">Sin historial hoy.</p>';
+           },
+
+
+           showEndOfDay: () => {
+               // Cálculo simple de lo que hay en pantalla (no del historial, sino de la sesión actual si guardamos, o mejor: lo que está en LocalStorage)
+               const h = JSON.parse(localStorage.getItem('caja_history') || '[]');
+               const cash = h.filter(i => i.method === 'EFECTIVO').reduce((a,b)=>a+b.total,0);
+               const card = h.filter(i => i.method === 'TARJETA').reduce((a,b)=>a+b.total,0);
+               alert(`ARQUEO RÁPIDO (Últimos 10)\n\nEfectivo: $${cash.toFixed(2)}\nTarjeta: $${card.toFixed(2)}\nTotal: $${(cash+card).toFixed(2)}`);
+           },
+
+
+           calcOp: (val) => {
+               const disp = document.getElementById('calc-display');
+               if(val === 'C') disp.value = '0';
+               else if(val === '=') { try { disp.value = eval(disp.value) } catch(e){ disp.value = 'Error'} }
+               else { disp.value = disp.value === '0' ? val : disp.value + val; }
+           },
+          
+           parseItems: (s) => String(s).replace(/^\|/, '').split('|').map(i=>i.trim()).filter(i=>i)
+       };
+
+
+       app.init();
+   </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+   <meta charset="utf-8"/>
+   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+   <title>Pedidos Listos | Despacho</title>
+   <link href="https://fonts.googleapis.com" rel="preconnect"/>
+   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+   <script>
+       tailwind.config = {
+           darkMode: "class",
+           theme: {
+               extend: {
+                   colors: {
+                       "primary": "#13ecb6", // Verde Neón para "LISTO"
+                       "primary-dark": "#0d9472",
+                       "background-dark": "#0f1115",
+                       "card-dark": "#1a1d24",
+                       "border-dark": "#2a303b",
+                   },
+                   fontFamily: { "display": ["Space Grotesk", "sans-serif"], "body": ["Noto Sans", "sans-serif"] },
+                   boxShadow: { "neon": "0 0 10px rgba(19, 236, 182, 0.2)" }
+               },
+           },
+       }
+   </script>
+   <style>
+       .scrollbar-hide::-webkit-scrollbar { display: none; }
+       .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+   </style>
+</head>
+<body class="bg-[#f6f7f8] dark:bg-background-dark min-h-screen flex flex-col antialiased font-display text-white transition-colors duration-300">
+
+
+   <header class="sticky top-0 z-50 bg-[#14171c]/95 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shadow-lg">
+       <div class="flex items-center gap-4">
+           <div class="flex items-center justify-center size-10 rounded-full bg-primary/10 border border-primary/20">
+               <span class="material-symbols-outlined text-primary">room_service</span>
+           </div>
+           <div>
+               <h1 class="text-xl font-bold tracking-tight text-white leading-none">ZONA DE PASE</h1>
+               <p class="text-xs text-primary font-medium tracking-wide mt-0.5 flex items-center gap-1">
+                   <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>
+                   ESPERANDO RECOGIDA
+               </p>
+           </div>
+       </div>
+       <button onclick="app.fetchOrders()" class="h-9 px-4 rounded-lg bg-[#232932] border border-white/5 hover:bg-white/5 text-sm font-bold flex items-center gap-2 transition-all">
+           <span class="material-symbols-outlined text-[18px]">sync</span> Refrescar
+       </button>
+   </header>
+
+
+   <main id="orders-container" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min pb-20">
+       <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50">
+           <span class="material-symbols-outlined text-4xl animate-spin mb-4 text-primary">progress_activity</span>
+           <p class="text-sm tracking-widest uppercase">Buscando platos...</p>
+       </div>
+   </main>
+
+
+   <script>
+       const CONFIG = {
+           // TU URL ACTUALIZADA
+           apiUrl: "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec",
+           pollInterval: 8000
+       };
+
+
+       const app = {
+           orders: [],
+
+
+           init: () => {
+               app.fetchOrders();
+               setInterval(() => app.fetchOrders(), CONFIG.pollInterval);
+               setInterval(() => app.updateTimers(), 1000);
+           },
+
+
+           fetchOrders: async () => {
+               try {
+                   const res = await fetch(`${CONFIG.apiUrl}?action=get_ready_orders`);
+                   const data = await res.json();
+                   app.orders = data;
+                   app.renderOrders();
+               } catch (e) {
+                   console.error("Error cargando despacho", e);
+               }
+           },
+
+
+           // Acción: ENTREGAR -> Marca como 'ENTREGADO'
+           deliverOrder: async (id, btn) => {
+               if(!confirm("¿Confirmar entrega al mozo?")) return;
+               app.updateStatus(id, "ENTREGADO", btn);
+           },
+
+
+           // Acción: DEVOLVER -> Marca como "" (Vacío) para que vuelva a Cocina
+           undoOrder: async (id, btn) => {
+               if(!confirm("¿Error? ¿Devolver pedido a Cocina?")) return;
+               app.updateStatus(id, "", btn); // Enviamos string vacío
+           },
+
+
+           updateStatus: async (id, status, btn) => {
+               const card = btn.closest('.order-card');
+               card.style.opacity = '0.5';
+               card.style.pointerEvents = 'none';
+              
+               try {
+                   await fetch(CONFIG.apiUrl, {
+                       method: 'POST',
+                       mode: 'no-cors',
+                       headers: {'Content-Type': 'text/plain'},
+                       body: JSON.stringify({ type: 'update_status', id: id, status: status })
+                   });
+                   // Feedback inmediato
+                   app.orders = app.orders.filter(o => o.id != id);
+                   app.renderOrders();
+               } catch(e) {
+                   alert("Error de conexión");
+                   card.style.opacity = '1';
+                   card.style.pointerEvents = 'auto';
+               }
+           },
+
+
+           parseItems: (itemsString) => {
+               let clean = String(itemsString).trim();
+               if (clean.startsWith('|')) clean = clean.substring(1);
+               // Separamos por tubería o coma para mostrar lista simple
+               return clean.split(/\||,/).map(i => i.trim()).filter(i => i);
+           },
+
+
+           renderOrders: () => {
+               const container = document.getElementById('orders-container');
+              
+               if (app.orders.length === 0) {
+                   container.innerHTML = `
+                       <div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                           <span class="material-symbols-outlined text-6xl mb-4">no_meals</span>
+                           <p class="text-xl font-bold">Barra de Pase Libre</p>
+                           <p class="text-sm">Los pedidos listos aparecerán aquí.</p>
+                       </div>`;
+                   return;
+               }
+
+
+               // Agrupar IDs únicos
+               const uniqueOrders = [];
+               const seenIds = new Set();
+               app.orders.forEach(o => {
+                   if(!seenIds.has(o.id)) {
+                       uniqueOrders.push(o);
+                       seenIds.add(o.id);
+                   }
+               });
+
+
+               container.innerHTML = uniqueOrders.map(order => {
+                   const startTime = new Date(order.time).getTime();
+                   const items = app.parseItems(order.items);
+                  
+                   const itemsHtml = items.map(item => {
+                       const simpleName = item.split('[')[0].trim();
+                       return `
+                       <div class="flex items-center gap-2 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                           <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
+                           <p class="text-white text-base font-medium leading-snug">${simpleName}</p>
+                       </div>`;
+                   }).join('');
+
+
+                   return `
+                   <div class="order-card flex flex-col bg-card-dark rounded-xl border border-white/5 overflow-hidden shadow-lg group relative h-fit" data-time="${startTime}">
+                       <div class="absolute top-0 left-0 w-1.5 h-full bg-primary shadow-neon"></div>
+                      
+                       <div class="p-4 pl-6 flex justify-between items-start bg-white/5 border-b border-white/5">
+                           <div>
+                               <div class="flex items-baseline gap-2">
+                                   <h2 class="text-2xl font-bold text-white tracking-tight">MESA ${order.mesa}</h2>
+                                   <span class="text-sm text-gray-400 font-medium">#${order.id}</span>
+                               </div>
+                               <div class="flex items-center gap-1.5 mt-1">
+                                   <span class="material-symbols-outlined text-gray-500 text-[16px]">person</span>
+                                   <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">${order.mozo}</p>
+                               </div>
+                           </div>
+                           <div class="bg-primary/10 border border-primary/20 px-2 py-1 rounded flex items-center gap-1">
+                               <span class="material-symbols-outlined text-primary text-[16px]">timer</span>
+                               <span class="timer-display text-lg font-bold text-primary font-mono">00:00</span>
+                           </div>
+                       </div>
+
+
+                       <div class="p-4 pl-6 flex-1 space-y-2">
+                           ${itemsHtml}
+                       </div>
+
+
+                       <div class="p-3 pl-6 bg-[#1f242d] border-t border-white/5 flex gap-3 mt-auto">
+                           <button onclick="app.undoOrder(${order.id}, this)" class="h-12 w-12 flex items-center justify-center rounded-lg border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-colors" title="Devolver a Cocina">
+                               <span class="material-symbols-outlined">undo</span>
+                           </button>
+                           <button onclick="app.deliverOrder(${order.id}, this)" class="flex-1 h-12 bg-primary hover:bg-white text-background-dark text-base font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-neon active:scale-[0.98]">
+                               <span class="material-symbols-outlined">check</span>
+                               ENTREGADO
+                           </button>
+                       </div>
+                   </div>`;
+               }).join('');
+              
+               app.updateTimers();
+           },
+
+
+           updateTimers: () => {
+               const now = new Date().getTime();
+               document.querySelectorAll('.order-card').forEach(card => {
+                   const startTime = parseInt(card.getAttribute('data-time'));
+                   if(!startTime) return;
+
+
+                   const diff = now - startTime;
+                   const minutes = Math.floor(diff / 60000);
+                   const seconds = Math.floor((diff % 60000) / 1000);
+                   const timeString = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+                  
+                   const timer = card.querySelector('.timer-display');
+                   if(timer) timer.innerText = timeString;
+               });
+           }
+       };
+
+
+       app.init();
+   </script>
+</body>
+</html>

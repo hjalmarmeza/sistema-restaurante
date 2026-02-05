@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Restaurante360 - Waiter Menu</title>
+<!-- Google Fonts: Space Grotesk & Noto Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1392ec",
+                        "primary-dark": "#0d6ab0",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                        "surface-dark": "#1c2a36",
+                        "surface-card": "#23313d",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    boxShadow: {
+                        "glow": "0 0 15px rgba(19, 146, 236, 0.4)",
+                        "glow-sm": "0 0 8px rgba(19, 146, 236, 0.3)",
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for horizontal scroll areas */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased selection:bg-primary selection:text-white">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-32">
+<!-- Top App Bar -->
+<div class="sticky top-0 z-40 bg-background-dark/95 backdrop-blur-md border-b border-white/5">
+<div class="flex items-center p-4 pb-2 justify-between">
+<button class="text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h2 class="text-white text-lg font-bold leading-tight tracking-wider uppercase">Table 12</h2>
+<span class="text-primary text-xs font-medium tracking-widest opacity-80">ORDER #4092</span>
+</div>
+<div class="flex w-10 items-center justify-end">
+<button class="text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">wifi</span>
+</button>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="px-4 pb-3 pt-1">
+<label class="flex flex-col h-11 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-inner bg-surface-dark border border-white/5 group focus-within:border-primary/50 transition-colors">
+<div class="text-[#92b2c9] flex items-center justify-center pl-4 pr-2">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 bg-transparent text-white focus:outline-0 placeholder:text-[#5c7a91] text-base font-normal leading-normal" placeholder="Search menu items..." value=""/>
+</div>
+</label>
+</div>
+<!-- Categories Chips -->
+<div class="flex gap-3 px-4 pb-4 overflow-x-auto hide-scrollbar snap-x">
+<button class="snap-start flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary shadow-glow px-5 border border-primary transition-all active:scale-95">
+<p class="text-white text-sm font-bold tracking-wide uppercase">All</p>
+</button>
+<button class="snap-start flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-dark border border-white/10 px-5 hover:bg-surface-card transition-all active:scale-95">
+<p class="text-[#92b2c9] text-sm font-medium tracking-wide uppercase">Appetizers</p>
+</button>
+<button class="snap-start flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-dark border border-white/10 px-5 hover:bg-surface-card transition-all active:scale-95">
+<p class="text-[#92b2c9] text-sm font-medium tracking-wide uppercase">Mains</p>
+</button>
+<button class="snap-start flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-dark border border-white/10 px-5 hover:bg-surface-card transition-all active:scale-95">
+<p class="text-[#92b2c9] text-sm font-medium tracking-wide uppercase">Desserts</p>
+</button>
+<button class="snap-start flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-dark border border-white/10 px-5 hover:bg-surface-card transition-all active:scale-95">
+<p class="text-[#92b2c9] text-sm font-medium tracking-wide uppercase">Drinks</p>
+</button>
+</div>
+</div>
+<!-- Main Content: Menu Grid -->
+<div class="grid grid-cols-2 gap-4 p-4">
+<!-- Item 1: Default State -->
+<div class="flex flex-col gap-3 group">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-1 ring-white/5 shadow-lg">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Juicy gourmet burger with neon lighting accents" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA1CaV3GS1Tmr_o_CftgpQZwHKPCBzXN0gRibru97aaUmruWoJTYrVmNrfCRQU0VLm6XpVSh_ayERNul_86qjcGH6XAMoRHJiQ9h-gHRInvMcQHyQyZKtDiWnMSh58eIrls0gFPXcyci7pbFr9B3VqeXfA2jQtEUBCpdWIVj1QDogJ_Y3WYUBtJU1dUTiZPx1aK8CSM7gbpRVLqAcLN9hKU8jBtW8cd9bjTyqLnTtnELR7WHiIJnq1vAz3VmlAC67rpgpQeIYWKlxs");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/10">
+<span class="text-white text-xs font-bold">$14.00</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between items-start mb-1">
+<p class="text-white text-base font-bold leading-tight tracking-wide uppercase">Neon Burger</p>
+</div>
+<button class="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface-card border border-white/10 text-primary font-medium hover:bg-surface-dark active:bg-primary active:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add
+                    </button>
+</div>
+</div>
+<!-- Item 2: Active State (In Order) -->
+<div class="flex flex-col gap-3 group relative">
+<!-- Active Indicator Glow -->
+<div class="absolute -inset-2 bg-primary/20 rounded-2xl blur-lg pointer-events-none"></div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-2 ring-primary shadow-glow-sm z-10">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Premium steak served on a dark plate with moody lighting" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDu9lcQ9IaUcNmt76oNH3hFCewDqgNzdEsd-Qe587aaAKFwE43DDdqTqPr7kOZDTj9CeiU5MpL7FmHM68pUrlrIT4NBm_EEcXG9u77faO2GeYm47wxJ9fL15dt3M9Tr567XU3wu4_4SEROu4qpxRQNslCfscFOnHTdu98nrvyNnotfXx6QCPcBjoCzzownOzpnV2vi4FtU3n2l1eH2nBeeInHmOfgivsE7PXtxPDe02ai4oQWaVUaKk_Jlk3lTDUL71iR0kxWKAjvY");'></div>
+<div class="absolute inset-0 bg-black/40"></div> <!-- Dimmed because active -->
+<!-- Floating Quantity Control -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="flex items-center gap-3 bg-black/80 backdrop-blur-md rounded-full p-1 border border-primary/50">
+<button class="size-8 rounded-full bg-white/10 flex items-center justify-center text-white active:bg-white/20">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="text-white font-bold text-lg min-w-[20px] text-center">2</span>
+<button class="size-8 rounded-full bg-primary flex items-center justify-center text-white shadow-glow active:bg-primary-dark">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col z-10">
+<div class="flex justify-between items-start">
+<p class="text-primary text-base font-bold leading-tight tracking-wide uppercase">Cyber Steak</p>
+</div>
+<p class="text-white/60 text-sm font-normal mt-1">$28.00 <span class="text-primary text-xs ml-1">x 2</span></p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex flex-col gap-3 group">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-1 ring-white/5 shadow-lg">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Futuristic colorful salad bowl" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB2cJ3kk6-v-LTNy5gWcB0UtTdd57D1HF1EChJYKg4Wsd5QnYQhi8-iQacoNx_nSSZCK5kmRdgea8yp3785BIc1WxPhYAks_ikWjk3Q4jAqdcbErHKKYIfTWkpNU7LiLLAxxPvVyJzVerXg7D1KTi-FP0DfgwCfMMuvXNDLvB15L1kNlNzMTH39O4GYhbEMv4hS_ywvTSCNKrbaR-8mUTkR1AxlKeyEVyZyp8nu1yGcBiYsVsmyUmVv16wCeEju2-Crg8xg49NZsVU");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/10">
+<span class="text-white text-xs font-bold">$12.00</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between items-start mb-1">
+<p class="text-white text-base font-bold leading-tight tracking-wide uppercase">Holo-Salad</p>
+</div>
+<button class="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface-card border border-white/10 text-primary font-medium hover:bg-surface-dark active:bg-primary active:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add
+                    </button>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex flex-col gap-3 group">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-1 ring-white/5 shadow-lg">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Black squid ink pasta dish" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB8AkE93PPe_8DiDs7Z4mcgAxvEgShZj7Psn6GYT4n7xlH-xEWg1jOfD40W-cvseK54LYml8FBj0JJrZVOnry30g_5nnGvzzvs2aoiU2hlrEiliNX9044NruqD8jN-B1HRMsxOfw2EsIUcKfLpbIlxRZM9e-sZU731Qj13SCDGETvTq7F09OS-SDf-WxwnnPLUWbsp6qNiJho8UexQVzMdV4AGWw5SH-NPudvMfpejriXgd7T2oqaL8D4l03Kw-0l0-QkHwhu-VpsI");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/10">
+<span class="text-white text-xs font-bold">$16.00</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between items-start mb-1">
+<p class="text-white text-base font-bold leading-tight tracking-wide uppercase">Void Pasta</p>
+</div>
+<button class="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface-card border border-white/10 text-primary font-medium hover:bg-surface-dark active:bg-primary active:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add
+                    </button>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="flex flex-col gap-3 group">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-1 ring-white/5 shadow-lg">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Vibrant orange cocktail with ice" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCACm36TTMNVH8uNu5gyrtBS28aViblirOTbbKOB3CaYdVIAr_XaSGgBcvh8TFC4d9zByFgtUyzx6-elyFl9wwfgu71KEi8gEPyIh8oRv7tqG0AYuqCdVcBRtCeWOdz5Q5JXu-5fa9pdN4N44BP1EYc_mY9hXocvXchiL6zLtQ-BHJKzWZyghIGPqicI2aw-KxWT2217UFvKO-YYyp6M4qjd3pK0aF_pBPuWwoKtME7o1vYmI_hcjNo7QYzJgDLqOdiNKO16WbVqU8");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/10">
+<span class="text-white text-xs font-bold">$12.00</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between items-start mb-1">
+<p class="text-white text-base font-bold leading-tight tracking-wide uppercase">Solar Flare</p>
+</div>
+<button class="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface-card border border-white/10 text-primary font-medium hover:bg-surface-dark active:bg-primary active:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add
+                    </button>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="flex flex-col gap-3 group">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-dark ring-1 ring-white/5 shadow-lg">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Dark chocolate lava cake" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBDJACYeNlFY5MkHRDt7R5mSbCA8np1Wd1GCEvOQ1yRkVVIg8-dE2KbhTz8S1YyKgcm9YMRMVmV7mueyig10KQahYYlaoBbKYKCNGLTeSL7-XVpbTZhmiBMGOEEd6gGKE9wUIYa2CsErvvM0RIYzURbIYNYqMtBxhJ3pkSbwZ7zSR5K5u1-mYYkuQfZ9gFQMdOdbnyr_5wwzbMUT0mWKTbpJhIXAYi7EWacq-nFSsW76RcaDGP-AyxSjNlMLhikiMlvy4eFIYOPw4Q");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 border border-white/10">
+<span class="text-white text-xs font-bold">$9.50</span>
+</div>
+</div>
+<div class="flex flex-col">
+<div class="flex justify-between items-start mb-1">
+<p class="text-white text-base font-bold leading-tight tracking-wide uppercase">Dark Matter</p>
+</div>
+<button class="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-surface-card border border-white/10 text-primary font-medium hover:bg-surface-dark active:bg-primary active:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add
+                    </button>
+</div>
+</div>
+</div>
+<!-- Floating Order Summary Tray -->
+<div class="fixed bottom-0 left-0 w-full z-50">
+<!-- Glassmorphism Container -->
+<div class="relative flex flex-col items-stretch bg-[#111b22]/95 backdrop-blur-xl border-t border-white/10 rounded-t-2xl shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+<!-- Handle -->
+<div class="flex h-6 w-full items-center justify-center pt-2 pb-1 cursor-grab">
+<div class="h-1 w-12 rounded-full bg-white/20"></div>
+</div>
+<!-- Summary Content -->
+<div class="px-5 pb-6 pt-1 flex flex-col gap-4">
+<!-- Mini List Preview (Collapsed View) -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium tracking-wide">Current Order</p>
+<p class="text-[#92b2c9] text-xs">2 x Cyber Steak, 1 x Solar Flare</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-white text-lg font-bold tracking-tight">$68.00</p>
+<p class="text-emerald-400 text-xs font-medium">Ready to send</p>
+</div>
+</div>
+<!-- Send Button -->
+<button class="relative group w-full flex items-center justify-between bg-primary hover:bg-primary-dark text-white rounded-xl h-14 px-6 shadow-glow transition-all active:scale-[0.98]">
+<!-- Badge -->
+<div class="flex items-center gap-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary font-bold text-sm">3</div>
+<span class="font-bold text-lg tracking-wide uppercase">Send to Kitchen</span>
+</div>
+<!-- Icon -->
+<span class="material-symbols-outlined text-[24px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+<!-- Button Glow Effect inside -->
+<div class="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20"></div>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>
