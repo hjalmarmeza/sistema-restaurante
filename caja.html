@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Caja Central | Restaurante360</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#6366f1", "primary-dark": "#4f46e5", "background-dark": "#0f1115", "card-dark": "#1a1d24", "danger": "#ef4444", "success": "#22c55e", "warning": "#f59e0b", "purple-accent": "#a855f7" },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"], "body": ["Noto Sans", "sans-serif"] }
+                },
+            },
+        }
+    </script>
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        dialog::backdrop { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+        .ticket-font { font-family: 'Noto Sans', monospace; }
+    </style>
+</head>
+<body class="bg-[#f6f7f8] dark:bg-background-dark min-h-screen flex flex-col font-display text-white transition-colors duration-300">
+
+    <header class="sticky top-0 z-40 bg-[#14171c]/95 backdrop-blur-md border-b border-white/5 p-4 flex items-center justify-between shadow-lg gap-4">
+        <div class="flex items-center gap-4 flex-1">
+            <div class="flex items-center justify-center size-10 rounded-full bg-primary/10 border border-primary/20 text-primary shrink-0">
+                <span class="material-symbols-outlined">point_of_sale</span>
+            </div>
+            <div class="hidden md:block">
+                <h1 class="text-xl font-bold tracking-tight text-white leading-none">CAJA CENTRAL</h1>
+                <p class="text-xs text-gray-400 font-medium tracking-wide mt-0.5">Control de Cobros V40</p>
+            </div>
+            
+            <a href="index.html" target="_blank" class="ml-4 h-10 px-4 rounded-lg bg-purple-accent hover:bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] text-sm font-bold flex items-center gap-2 transition-all border border-purple-400/30 animate-pulse">
+                <span class="material-symbols-outlined">restaurant_menu</span>
+                <span class="hidden sm:inline">TOMAR PEDIDO</span>
+            </a>
+        </div>
+
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('modal-history').showModal(); app.renderHistory()" class="h-9 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 flex items-center gap-2 text-xs font-bold transition-all"><span class="material-symbols-outlined text-[16px]">history</span> Historial</button>
+            <button onclick="app.showEndOfDay()" class="h-9 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 flex items-center gap-2 text-xs font-bold transition-all"><span class="material-symbols-outlined text-[16px]">summarize</span> Arqueo</button>
+            <button onclick="app.fetchOrders()" class="h-9 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 text-sm font-bold flex items-center gap-2 transition-all"><span class="material-symbols-outlined text-[18px]">sync</span> Actualizar</button>
+        </div>
+    </header>
+
+    <main id="caja-container" class="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min pb-20">
+        <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-50">
+            <span class="material-symbols-outlined text-4xl animate-spin mb-4 text-primary">progress_activity</span>
+            <p class="text-sm tracking-widest uppercase">Conectando con DB_MENU...</p>
+        </div>
+    </main>
+
+    <dialog id="modal-cobro" class="bg-card-dark text-white p-0 rounded-2xl w-full max-w-4xl backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto h-[90vh]">
+        <div class="flex h-full flex-col md:flex-row">
+            <div class="w-full md:w-2/3 flex flex-col border-r border-white/5 h-full">
+                <div class="p-6 border-b border-white/5 flex justify-between items-start bg-white/5">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white">MESA <span id="modal-mesa" class="text-primary">--</span></h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-gray-400">Orden #<span id="modal-id">--</span></span>
+                            <span id="modal-status-badge" class="bg-warning/20 text-warning border border-warning/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest hidden">⚠️ En Cocina</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                         <button onclick="document.getElementById('modal-cobro').close()" class="size-10 rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-colors flex items-center justify-center"><span class="material-symbols-outlined">close</span></button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 bg-[#16181d]/50">
+                    <div class="max-w-md mx-auto bg-white/5 p-4 rounded-xl border border-white/5 shadow-inner">
+                        <div class="flex justify-between text-xs text-gray-500 font-bold uppercase tracking-widest mb-4 border-b border-white/10 pb-2">
+                            <span>Descripción</span>
+                            <span>Importe</span>
+                        </div>
+                        <div id="modal-items" class="space-y-2 ticket-font"></div>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-black/20 border-t border-white/5">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Total a Pagar</p>
+                            <p id="modal-total" class="text-4xl font-bold text-white font-mono">$0.00</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="app.addTip()" class="h-10 px-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase text-success flex items-center gap-1"><span class="material-symbols-outlined text-sm">savings</span> Propina</button>
+                            <button onclick="app.addDiscount()" class="h-10 px-3 rounded bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase text-danger flex items-center gap-1"><span class="material-symbols-outlined text-sm">percent</span> Dscto.</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full md:w-1/3 flex flex-col bg-[#16181d] h-full">
+                <div class="p-6 flex-1 flex flex-col gap-3 overflow-y-auto">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Método de Pago</p>
+                    <button onclick="app.pay('EFECTIVO')" class="h-16 rounded-xl bg-success/10 hover:bg-success/20 border border-success/20 flex items-center justify-between px-6 group transition-all shrink-0"><span class="font-bold text-success group-hover:scale-105 transition-transform">EFECTIVO</span><span class="material-symbols-outlined text-success text-2xl">payments</span></button>
+                    <button onclick="app.pay('TARJETA')" class="h-16 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 flex items-center justify-between px-6 group transition-all shrink-0"><span class="font-bold text-primary group-hover:scale-105 transition-transform">TARJETA</span><span class="material-symbols-outlined text-primary text-2xl">credit_card</span></button>
+                    <button onclick="app.requestAdminAuth(() => app.pay('CORTESIA'))" class="h-16 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 flex items-center justify-between px-6 group transition-all shrink-0"><span class="font-bold text-purple-400 group-hover:scale-105 transition-transform">CORTESÍA</span><span class="material-symbols-outlined text-purple-400 text-2xl">verified_user</span></button>
+                    <hr class="border-white/5 my-2">
+                    <button onclick="app.generatePreCheck()" class="h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center gap-2 text-sm font-bold text-gray-300 shrink-0"><span class="material-symbols-outlined">receipt_long</span> Ver Pre-Cuenta</button>
+                    <button onclick="document.getElementById('modal-calc').showModal()" class="h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-center gap-2 text-sm font-bold text-gray-300 shrink-0"><span class="material-symbols-outlined">calculate</span> Calculadora</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="modal-input" class="bg-card-dark text-white p-6 rounded-2xl w-full max-w-xs backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto z-[60]">
+        <h3 id="input-title" class="text-center font-bold text-lg mb-4 text-primary">INGRESAR MONTO</h3>
+        <input type="text" id="custom-input" readonly class="w-full bg-black/20 border border-white/10 rounded-lg h-12 text-center text-2xl tracking-widest mb-4 focus:ring-primary focus:border-primary">
+        <div class="grid grid-cols-3 gap-2">
+            <button onclick="app.typeInput(1)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">1</button>
+            <button onclick="app.typeInput(2)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">2</button>
+            <button onclick="app.typeInput(3)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">3</button>
+            <button onclick="app.typeInput(4)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">4</button>
+            <button onclick="app.typeInput(5)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">5</button>
+            <button onclick="app.typeInput(6)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">6</button>
+            <button onclick="app.typeInput(7)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">7</button>
+            <button onclick="app.typeInput(8)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">8</button>
+            <button onclick="app.typeInput(9)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">9</button>
+            <button onclick="app.typeInput('.')" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">.</button>
+            <button onclick="app.typeInput(0)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">0</button>
+            <button onclick="document.getElementById('custom-input').value=''" class="h-12 text-gray-400"><span class="material-symbols-outlined">backspace</span></button>
+            <button onclick="document.getElementById('modal-input').close()" class="h-12 bg-red-500/20 text-red-400 font-bold rounded mt-2">CANCELAR</button>
+            <button onclick="app.confirmInput()" class="h-12 bg-green-500/20 text-green-400 font-bold rounded col-span-2 mt-2">CONFIRMAR</button>
+        </div>
+    </dialog>
+
+    <dialog id="modal-pin" class="bg-card-dark text-white p-6 rounded-2xl w-full max-w-xs backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto z-[70]">
+        <h3 class="text-center font-bold text-lg mb-4 text-primary">PIN ADMINISTRADOR</h3>
+        <input type="password" id="pin-input" readonly class="w-full bg-black/20 border border-white/10 rounded-lg h-12 text-center text-2xl tracking-[0.5em] mb-4 focus:ring-primary focus:border-primary">
+        <div class="grid grid-cols-3 gap-2">
+            <button onclick="app.typePin(1)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">1</button>
+            <button onclick="app.typePin(2)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">2</button>
+            <button onclick="app.typePin(3)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">3</button>
+            <button onclick="app.typePin(4)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">4</button>
+            <button onclick="app.typePin(5)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">5</button>
+            <button onclick="app.typePin(6)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">6</button>
+            <button onclick="app.typePin(7)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">7</button>
+            <button onclick="app.typePin(8)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">8</button>
+            <button onclick="app.typePin(9)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">9</button>
+            <button onclick="document.getElementById('modal-pin').close()" class="h-12 text-red-400 font-bold text-xs">CANCEL</button>
+            <button onclick="app.typePin(0)" class="h-12 bg-white/5 rounded hover:bg-white/10 text-xl font-bold">0</button>
+            <button onclick="document.getElementById('pin-input').value=''" class="h-12 text-gray-400"><span class="material-symbols-outlined">backspace</span></button>
+        </div>
+    </dialog>
+
+    <dialog id="modal-calc" class="bg-card-dark text-white p-4 rounded-2xl w-full max-w-xs backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto z-50">
+        <div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-500">CALCULADORA</span><button onclick="document.getElementById('modal-calc').close()"><span class="material-symbols-outlined text-sm">close</span></button></div>
+        <input id="calc-display" class="w-full bg-black/30 text-right text-2xl font-mono p-2 mb-2 rounded border border-white/10" readonly value="0">
+        <div class="grid grid-cols-4 gap-2">
+            <button onclick="app.calcOp('C')" class="col-span-1 bg-red-500/20 text-red-400 h-10 rounded font-bold">C</button>
+            <button onclick="app.calcOp('/')" class="bg-primary/20 text-primary h-10 rounded font-bold">/</button>
+            <button onclick="app.calcOp('*')" class="bg-primary/20 text-primary h-10 rounded font-bold">x</button>
+            <button onclick="app.calcOp('-')" class="bg-primary/20 text-primary h-10 rounded font-bold">-</button>
+            <button onclick="app.calcOp('7')" class="bg-white/5 h-10 rounded font-bold">7</button>
+            <button onclick="app.calcOp('8')" class="bg-white/5 h-10 rounded font-bold">8</button>
+            <button onclick="app.calcOp('9')" class="bg-white/5 h-10 rounded font-bold">9</button>
+            <button onclick="app.calcOp('+')" class="bg-primary/20 text-primary h-10 rounded font-bold row-span-2 flex items-center justify-center">+</button>
+            <button onclick="app.calcOp('4')" class="bg-white/5 h-10 rounded font-bold">4</button>
+            <button onclick="app.calcOp('5')" class="bg-white/5 h-10 rounded font-bold">5</button>
+            <button onclick="app.calcOp('6')" class="bg-white/5 h-10 rounded font-bold">6</button>
+            <button onclick="app.calcOp('1')" class="bg-white/5 h-10 rounded font-bold">1</button>
+            <button onclick="app.calcOp('2')" class="bg-white/5 h-10 rounded font-bold">2</button>
+            <button onclick="app.calcOp('3')" class="bg-white/5 h-10 rounded font-bold">3</button>
+            <button onclick="app.calcOp('=')" class="bg-success/20 text-success h-10 rounded font-bold row-span-2 flex items-center justify-center">=</button>
+            <button onclick="app.calcOp('0')" class="col-span-2 bg-white/5 h-10 rounded font-bold">0</button>
+            <button onclick="app.calcOp('.')" class="bg-white/5 h-10 rounded font-bold">.</button>
+        </div>
+    </dialog>
+
+    <dialog id="modal-history" class="bg-card-dark text-white p-6 rounded-2xl w-full max-w-md backdrop:bg-black/90 border border-white/10 shadow-2xl m-auto">
+        <div class="flex justify-between items-center mb-4"><h3 class="font-bold">Últimas Mesas Cerradas</h3><button onclick="document.getElementById('modal-history').close()"><span class="material-symbols-outlined">close</span></button></div>
+        <div id="history-list" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+    </dialog>
+
+    <script>
+        const CONFIG = {
+            apiUrl: "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec"
+        };
+
+        const setTextSafe = (id, text) => { const el = document.getElementById(id); if(el) el.innerText = text; };
+
+        const app = {
+            data: [], staff: [], menu: [], groupedOrders: {}, currentTableId: null, pinCallback: null, inputCallback: null, menuMap: {},
+
+            init: async () => {
+                await Promise.all([app.fetchOrders(), app.fetchStaff(), app.fetchMenu()]);
+                setInterval(app.fetchOrders, 10000);
+            },
+
+            fetchOrders: async () => {
+                try {
+                    const res = await fetch(`${CONFIG.apiUrl}?action=get_caja_orders&t=${Date.now()}`);
+                    app.data = await res.json();
+                    app.processOrders();
+                    app.renderGrid();
+                    const modal = document.getElementById('modal-cobro');
+                    if(modal && modal.open && app.currentTableId) { app.openModal(app.currentTableId); }
+                } catch (e) { console.error("Sync error", e); }
+            },
+            
+            fetchStaff: async () => { try { const res = await fetch(`${CONFIG.apiUrl}?action=get_staff`); app.staff = await res.json(); } catch(e){} },
+            
+            fetchMenu: async () => { 
+                try { 
+                    const res = await fetch(`${CONFIG.apiUrl}?action=get_menu`); 
+                    app.menu = await res.json(); 
+                    // Crear mapa de precios para búsqueda rápida
+                    app.menu.forEach(item => {
+                        app.menuMap[item.name.trim().toLowerCase()] = item.price;
+                    });
+                } catch(e){} 
+            },
+
+            processOrders: () => {
+                app.groupedOrders = {};
+                const active = app.data.filter(o => !['ANULADO', 'PAGADO', 'CORTESIA'].includes(o.status));
+                active.forEach(o => {
+                    if (!app.groupedOrders[o.id]) {
+                        app.groupedOrders[o.id] = { id: o.id, mesa: o.mesa, mozo: o.mozo, items: [], total: 0, hasPending: false, startTime: o.time };
+                    }
+                    const isGhostItem = o.items.includes('***') || o.items.includes('[ANULADO]');
+                    if (o.status === 'PENDIENTE' && !isGhostItem) {
+                        app.groupedOrders[o.id].hasPending = true;
+                    }
+                    app.groupedOrders[o.id].total += Number(o.total);
+                });
+            },
+
+            renderGrid: () => {
+                const container = document.getElementById('caja-container');
+                if(!container) return;
+                const orders = Object.values(app.groupedOrders);
+                if (orders.length === 0) {
+                    container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-500"><span class="material-symbols-outlined text-6xl mb-4 text-primary">point_of_sale</span><p class="text-xl font-bold">Sin cuentas pendientes</p></div>`;
+                    return;
+                }
+                container.innerHTML = orders.map(o => `
+                    <div onclick="app.openModal('${o.id}')" class="bg-card-dark rounded-xl border border-white/5 p-5 cursor-pointer hover:border-primary/50 transition-all shadow-lg active:scale-[0.98] group relative overflow-hidden">
+                        ${o.hasPending ? '<div class="absolute top-0 right-0 p-2"><span class="animate-pulse size-3 rounded-full bg-warning block shadow-[0_0_10px_#f59e0b]"></span></div>' : '<div class="absolute top-0 right-0 p-2"><span class="size-3 rounded-full bg-success block shadow-[0_0_10px_#22c55e]"></span></div>'}
+                        <div class="flex justify-between items-start mb-4">
+                            <div><h3 class="text-2xl font-bold text-white">MESA ${o.mesa}</h3><p class="text-xs text-primary font-bold tracking-widest mt-1">#${o.id}</p></div>
+                        </div>
+                        <p class="text-3xl font-bold text-white font-mono mb-4">$${o.total.toFixed(2)}</p>
+                        <div class="flex items-center gap-2 text-xs text-gray-500 font-bold uppercase tracking-wider border-t border-white/5 pt-3"><span class="material-symbols-outlined text-[16px]">person</span> ${o.mozo}</div>
+                    </div>`).join('');
+            },
+
+            // --- V40: TICKET DETALLADO CON PRECIOS INDIVIDUALES DEL MENÚ ---
+            openModal: (id) => {
+                const o = app.groupedOrders[id];
+                if(!o) { document.getElementById('modal-cobro').close(); return; }
+                app.currentTableId = id;
+                
+                setTextSafe('modal-mesa', o.mesa);
+                setTextSafe('modal-id', o.id);
+                setTextSafe('modal-total', `$${o.total.toFixed(2)}`);
+                
+                const badge = document.getElementById('modal-status-badge');
+                if(badge) {
+                    if(o.hasPending) { badge.classList.remove('hidden'); badge.innerText = "⚠️ EN COCINA"; } 
+                    else { badge.classList.add('hidden'); }
+                }
+
+                const rawRows = app.data.filter(r => r.id == id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(r.status));
+                const itemsContainer = document.getElementById('modal-items');
+                
+                if(itemsContainer) {
+                    let globalInventory = []; 
+                    let htmlParts = [];
+
+                    rawRows.forEach(row => {
+                        // A. SISTEMA (PROPINA/DESC) - Se muestran directo
+                        if (row.items.includes('***')) {
+                            const sysName = row.items.replace(/\*\*\*/g, '').trim();
+                            const isDiscount = row.items.includes('DESCUENTO');
+                            const sysColor = isDiscount ? 'text-danger' : 'text-success';
+                            htmlParts.push(`
+                            <div class="flex justify-between items-center py-2 px-1 border-b border-white/5 last:border-0 hover:bg-white/5 rounded">
+                                <span class="text-sm font-bold ${sysColor}">${sysName}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold font-mono text-white">${Number(row.total) < 0 ? '' : '+'}$${Number(row.total).toFixed(2)}</span>
+                                    <button onclick="app.deleteRow('${row.items}', ${row.total})" class="text-gray-500 hover:text-danger"><span class="material-symbols-outlined text-xs">delete</span></button>
+                                </div>
+                            </div>`);
+                            return;
+                        }
+
+                        // B. COMIDA - Desglose y Búsqueda de Precio
+                        let cleanText = row.items.replace(/✔|✓/g, '').replace(/\[.*?\]/g, '').replace(/[\[\]\(\)]/g, '').replace(/\b(luego|servir|espera)\b/gi, '').trim();
+                        let currentItems = cleanText.split(/\||,/).map(i => i.trim()).filter(i => i);
+                        let tempCurrent = [...currentItems];
+
+                        // Filtro anti-duplicados (solo mostramos lo nuevo de esta fila)
+                        globalInventory.forEach(seen => {
+                            let idx = tempCurrent.indexOf(seen);
+                            if(idx > -1) tempCurrent.splice(idx, 1);
+                        });
+
+                        // Procesamos SOLO los items nuevos de esta fila
+                        if(tempCurrent.length > 0) {
+                            tempCurrent.forEach(itemName => {
+                                // BUSCAR PRECIO EN DB_MENU
+                                const lookupName = itemName.toLowerCase();
+                                let unitPrice = app.menuMap[lookupName];
+                                
+                                // Si no encuentra precio exacto (ej: items manuales), intentamos promediar o mostrar ?
+                                // Fallback: Si no hay precio en menú, mostramos "--"
+                                let displayPrice = unitPrice !== undefined ? `$${Number(unitPrice).toFixed(2)}` : "--";
+
+                                htmlParts.push(`
+                                <div class="flex justify-between items-center py-2 px-1 border-b border-white/5 last:border-0 hover:bg-white/5 rounded group">
+                                    <span class="text-sm font-medium text-gray-200">${itemName}</span>
+                                    <div class="flex items-center gap-3">
+                                        <span class="font-mono text-gray-400 text-sm">${displayPrice}</span>
+                                        <button onclick="app.deleteRow('${row.items}', ${row.total})" class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-danger transition-opacity" title="Anular bloque original">
+                                            <span class="material-symbols-outlined text-xs">delete</span>
+                                        </button>
+                                    </div>
+                                </div>`);
+                            });
+                        }
+                        
+                        globalInventory = [...globalInventory, ...tempCurrent];
+                    });
+
+                    itemsContainer.innerHTML = htmlParts.length ? htmlParts.join('') : '<div class="text-center text-gray-500 py-4 italic">Lista vacía</div>';
+                }
+                const modal = document.getElementById('modal-cobro');
+                if(modal && !modal.open) modal.showModal();
+            },
+
+            pay: async (method) => {
+                if(!app.currentTableId) return;
+                const o = app.groupedOrders[app.currentTableId];
+                
+                const rawRows = app.data.filter(r => r.id == o.id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(r.status));
+                let tips = 0;
+                rawRows.forEach(r => { if(r.items.includes('*** PROPINA')) tips += Number(r.total); });
+                const netSale = o.total - tips;
+
+                if(!confirm(`¿Cerrar Mesa ${o.mesa} como ${method}?\n\nTotal Caja: $${o.total.toFixed(2)}\n(Venta: $${netSale.toFixed(2)} + Propina: $${tips.toFixed(2)})`)) return;
+
+                document.getElementById('modal-cobro').close();
+                app.saveToHistory({ mesa: o.mesa, total: o.total, net: netSale, tips: tips }, method);
+                delete app.groupedOrders[app.currentTableId];
+                app.renderGrid();
+                await fetch(CONFIG.apiUrl, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({ type: 'complete_order', id: o.id, finalStatus: method === 'CORTESIA' ? 'CORTESIA' : `PAGADO (${method})` }) });
+            },
+
+            sendGhostItem: async (name, price, initialStatus) => {
+                const o = app.groupedOrders[app.currentTableId];
+                
+                try {
+                    await fetch(CONFIG.apiUrl, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({ type: 'order', id: o.id, mozo: 'CAJA', mesa: o.mesa, personas: 1, items: name, total: price }) });
+                    if (initialStatus !== 'PENDIENTE') {
+                        await new Promise(r => setTimeout(r, 2000));
+                        await fetch(CONFIG.apiUrl, { method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({ type: 'complete_order', id: o.id, finalStatus: initialStatus }) });
+                    }
+                } catch(e) { console.error(e); }
+
+                setTimeout(app.fetchOrders, 1500); 
+            },
+
+            requestAmount: (title, callback) => {
+                document.getElementById('input-title').innerText = title;
+                document.getElementById('custom-input').value = '';
+                app.inputCallback = callback;
+                document.getElementById('modal-input').showModal();
+            },
+            
+            typeInput: (val) => {
+                const inp = document.getElementById('custom-input');
+                if(val === '.' && inp.value.includes('.')) return;
+                inp.value += val;
+            },
+            
+            confirmInput: () => {
+                const val = document.getElementById('custom-input').value;
+                if(!val || isNaN(val)) { alert("Monto inválido"); return; }
+                document.getElementById('modal-input').close();
+                if(app.inputCallback) app.inputCallback(parseFloat(val));
+            },
+
+            applyTip: (amount) => { app.sendGhostItem("*** PROPINA MOZO ***", amount, 'ENTREGADO'); },
+            applyDiscount: (amount) => { app.sendGhostItem("*** DESCUENTO ***", -Math.abs(amount), 'ENTREGADO'); },
+
+            addTip: () => { app.requestAmount("MONTO PROPINA", app.applyTip); },
+            addDiscount: () => { app.requestAdminAuth(() => app.requestAmount("MONTO DESCUENTO", app.applyDiscount)); },
+            
+            deleteRow: (itemName, price) => { app.requestAdminAuth(async () => { const negPrice = -Math.abs(price); await app.sendGhostItem(`[ANULADO] ${itemName}`, negPrice, 'ANULADO'); alert("Ítem anulado."); }); },
+            requestAdminAuth: (callback) => { app.pinCallback = callback; document.getElementById('pin-input').value = ""; document.getElementById('modal-pin').showModal(); },
+            typePin: (num) => { const inp = document.getElementById('pin-input'); if (inp.value.length < 4) inp.value += num; if (inp.value.length === 4) app.validatePin(); },
+            validatePin: () => { const pin = document.getElementById('pin-input').value; const admin = app.staff.find(u => String(u.pin) === pin && String(u.role).toUpperCase().trim() === 'ADMIN'); document.getElementById('modal-pin').close(); if (admin) { if (app.pinCallback) app.pinCallback(); } else { alert("PIN NO AUTORIZADO"); } },
+            
+            generatePreCheck: () => { 
+                const o = app.groupedOrders[app.currentTableId]; 
+                const lines = [`MESA: ${o.mesa}`, "----------------"]; 
+                let globalInventory = [];
+
+                app.data.filter(r => r.id == o.id && !['ANULADO', 'PAGADO', 'CORTESIA'].includes(r.status)).forEach(r => {
+                    if (r.items.includes('***')) { lines.push(`${r.items} ... $${r.total}`); return; }
+
+                    let clean = r.items.replace(/✔|✓/g, '').replace(/\[.*?\]/g, '').replace(/[\[\]]/g, '').trim();
+                    let currentItems = clean.split(/\||,/).map(s=>s.trim()).filter(s=>s);
+                    let tempCurrent = [...currentItems];
+                    
+                    globalInventory.forEach(seen => {
+                        let idx = tempCurrent.indexOf(seen);
+                        if(idx > -1) tempCurrent.splice(idx, 1);
+                    });
+
+                    // V40 PRE-CUENTA: También desglosada
+                    tempCurrent.forEach(item => {
+                        const price = app.menuMap[item.toLowerCase()] || 0;
+                        lines.push(`${item} ... $${Number(price).toFixed(2)}`);
+                    });
+                    
+                    globalInventory = [...globalInventory, ...tempCurrent];
+                }); 
+                
+                lines.push("----------------", `TOTAL: $${o.total.toFixed(2)}`); 
+                alert(lines.join("\n")); 
+            },
+            
+            saveToHistory: (data, method) => { 
+                const history = JSON.parse(localStorage.getItem('caja_history') || '[]'); 
+                history.unshift({ time: new Date().toLocaleTimeString(), mesa: data.mesa, total: data.total, net: data.net, tips: data.tips, method: method }); 
+                if(history.length > 10) history.pop(); 
+                localStorage.setItem('caja_history', JSON.stringify(history)); 
+            },
+            
+            renderHistory: () => { 
+                const h = JSON.parse(localStorage.getItem('caja_history') || '[]'); 
+                document.getElementById('history-list').innerHTML = h.length ? h.map(i => `
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <div><p class="font-bold">Mesa ${i.mesa}</p><p class="text-xs text-gray-500">${i.time} - ${i.method}</p></div>
+                        <div class="text-right">
+                            <p class="font-bold text-primary">$${i.total.toFixed(2)}</p>
+                            ${i.tips > 0 ? `<p class="text-[10px] text-success">+Propina $${i.tips.toFixed(2)}</p>` : ''}
+                        </div>
+                    </div>`).join('') : '<p class="text-center text-gray-500">Sin historial.</p>'; 
+            },
+            
+            showEndOfDay: () => { 
+                const h = JSON.parse(localStorage.getItem('caja_history') || '[]'); 
+                const totalCash = h.filter(i => i.method === 'EFECTIVO').reduce((a,b)=>a+b.total,0); 
+                const totalCard = h.filter(i => i.method === 'TARJETA').reduce((a,b)=>a+b.total,0); 
+                const grandTotal = totalCash + totalCard;
+                const totalTips = h.reduce((a,b) => a + (b.tips || 0), 0);
+                const totalNet = h.reduce((a,b) => a + (b.net || 0), 0);
+
+                alert(`📊 ARQUEO RÁPIDO (Últimos 10)\n\n` +
+                      `💵 Efectivo en Caja: $${totalCash.toFixed(2)}\n` +
+                      `💳 Vouchers Tarjeta: $${totalCard.toFixed(2)}\n` +
+                      `---------------------------\n` +
+                      `💰 RECAUDACIÓN TOTAL: $${grandTotal.toFixed(2)}\n\n` +
+                      `✅ Venta Tienda: $${totalNet.toFixed(2)}\n` +
+                      `💁‍♂️ Fondo Propinas: $${totalTips.toFixed(2)}`); 
+            },
+            
+            calcOp: (val) => { const disp = document.getElementById('calc-display'); if(val === 'C') disp.value = '0'; else if(val === '=') { try { disp.value = eval(disp.value) } catch(e){ disp.value = 'Error'} } else { disp.value = disp.value === '0' ? val : disp.value + val; } }
+        };
+
+        window.onload = app.init;
+    </script>
+</body>
+</html>

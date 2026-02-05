@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>Gestión | Restaurante360</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            darkMode: "class", 
+            theme: { extend: { colors: { primary: "#1392ec", dark: "#0f1115", card: "#1a1d24" } } } 
+        }
+    </script>
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sticky-fix { box-shadow: 0 10px 20px -10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body class="bg-dark text-white font-sans h-[100dvh] flex flex-col md:flex-row overflow-hidden">
+
+    <script>
+        const CLOUDINARY_CONFIG = { cloudName: "dmvkaq9zc", uploadPreset: "restaurante360_preset" };
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziajyL10l9cnis2NZ1k4UDCYylbysU-PBNw930e-wRdBpdYeBZHOYhsT5YOhkNKT4O/exec";
+    </script>
+
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-dark flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-sm text-center">
+            <span class="material-symbols-outlined text-6xl text-primary mb-4">lock</span>
+            <h2 class="text-2xl font-bold mb-2">Acceso de Gestión</h2>
+            <p class="text-gray-400 mb-6">Ingresa tu PIN autorizado</p>
+            <div class="flex justify-center gap-4 mb-6"><input type="password" id="admin-pin" class="bg-card border border-white/10 rounded-xl px-4 py-3 text-center text-2xl tracking-widest w-32 focus:border-primary outline-none" maxlength="4" placeholder="****"></div>
+            <button onclick="app.login()" class="bg-primary hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl w-full shadow-lg transition-transform active:scale-95">INGRESAR</button>
+            <p id="login-error" class="text-red-500 mt-4 text-sm hidden">PIN incorrecto o no autorizado.</p>
+        </div>
+    </div>
+
+    <header class="md:hidden flex-none flex items-center justify-between p-4 bg-card border-b border-white/5 z-20 relative shadow-md">
+        <h1 class="text-lg font-bold tracking-tight flex items-center gap-2"><span class="material-symbols-outlined text-primary">admin_panel_settings</span> GESTIÓN</h1>
+        <div class="flex gap-2">
+            <button onclick="app.logout()" class="text-red-400"><span class="material-symbols-outlined">logout</span></button>
+            <button onclick="window.location.reload()" class="text-gray-400"><span class="material-symbols-outlined">refresh</span></button>
+        </div>
+    </header>
+
+    <nav class="fixed bottom-0 left-0 w-full bg-card border-t border-white/5 z-50 flex justify-around items-center p-2 pb-safe md:relative md:w-64 md:flex-col md:justify-start md:border-t-0 md:border-r md:h-full md:p-6 md:space-y-2 shadow-2xl md:shadow-none">
+        <div class="hidden md:block mb-6 border-b border-white/5 pb-6"><h1 class="text-2xl font-bold tracking-tight">GESTIÓN 360</h1></div>
+        
+        <button onclick="app.showTab('menu')" id="btn-menu" class="nav-btn flex flex-col md:flex-row items-center md:gap-3 p-2 md:px-4 md:py-3 rounded-lg text-gray-400 hover:text-white md:hover:bg-white/5 transition-all group w-full md:w-auto justify-center md:justify-start"><span class="material-symbols-outlined text-2xl md:text-xl">restaurant_menu</span><span class="text-[10px] md:text-base font-bold mt-1 md:mt-0">MENÚ</span></button>
+        <button onclick="app.showTab('staff')" id="btn-staff" class="nav-btn flex flex-col md:flex-row items-center md:gap-3 p-2 md:px-4 md:py-3 rounded-lg text-gray-400 hover:text-white md:hover:bg-white/5 transition-all group w-full md:w-auto justify-center md:justify-start"><span class="material-symbols-outlined text-2xl md:text-xl">groups</span><span class="text-[10px] md:text-base font-bold mt-1 md:mt-0">EQUIPO</span></button>
+        <button onclick="app.showTab('tables')" id="btn-tables" class="nav-btn flex flex-col md:flex-row items-center md:gap-3 p-2 md:px-4 md:py-3 rounded-lg text-gray-400 hover:text-white md:hover:bg-white/5 transition-all group w-full md:w-auto justify-center md:justify-start"><span class="material-symbols-outlined text-2xl md:text-xl">table_restaurant</span><span class="text-[10px] md:text-base font-bold mt-1 md:mt-0">MESAS</span></button>
+        
+        <div class="flex-1 hidden md:block"></div> <a href="cocina.html" class="hidden md:flex flex-col md:flex-row items-center md:gap-3 p-2 md:px-4 md:py-3 rounded-lg text-gray-400 hover:text-yellow-400 md:hover:bg-white/5 transition-all group w-full justify-center md:justify-start mt-auto"><span class="material-symbols-outlined text-2xl md:text-xl">skillet</span><span class="text-[10px] md:text-base font-bold">Ir a Cocina</span></a>
+        
+        <button onclick="app.logout()" class="hidden md:flex flex-col md:flex-row items-center md:gap-3 p-2 md:px-4 md:py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all group w-full justify-center md:justify-start">
+            <span class="material-symbols-outlined text-2xl md:text-xl">logout</span><span class="text-[10px] md:text-base font-bold">Cerrar Sesión</span>
+        </button>
+    </nav>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-dark z-0">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-32 md:pb-8 scroll-smooth relative z-0">
+            
+            <div id="tab-menu" class="space-y-6 animate-fade-in relative z-0">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center sticky top-0 z-20 bg-dark pt-4 pb-3 border-b border-white/10 sticky-fix mb-4 -mx-4 px-4 md:-mx-8 md:px-8 -mt-4 md:-mt-8">
+                    <h2 class="text-xl md:text-2xl font-bold mb-2 md:mb-0">Carta Digital</h2>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64"><span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-500 text-sm">search</span><input type="text" id="search-menu" onkeyup="app.filterMenu()" placeholder="Buscar plato..." class="w-full bg-card border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm focus:border-primary outline-none"></div>
+                        <button onclick="app.openModal('modal-menu')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-primary/20 text-sm active:scale-95 transition-transform shrink-0"><span class="material-symbols-outlined text-lg">add</span> <span class="hidden md:inline">Nuevo</span></button>
+                    </div>
+                </div>
+                <div id="menu-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 relative z-0"></div>
+            </div>
+
+            <div id="tab-staff" class="hidden space-y-6 animate-fade-in relative z-0">
+                <div class="flex justify-between items-center sticky top-0 z-20 bg-dark pt-4 pb-3 border-b border-white/10 sticky-fix mb-4 -mx-4 px-4 md:-mx-8 md:px-8 -mt-4 md:-mt-8">
+                    <h2 class="text-xl md:text-2xl font-bold">Equipo</h2>
+                    <button onclick="app.openModal('modal-staff')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-primary/20 text-sm md:text-base active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">person_add</span> Nuevo</button>
+                </div>
+                <div id="staff-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 relative z-0"></div>
+            </div>
+
+            <div id="tab-tables" class="hidden space-y-6 animate-fade-in relative z-0">
+                <div class="flex justify-between items-center sticky top-0 z-20 bg-dark pt-4 pb-3 border-b border-white/10 sticky-fix mb-4 -mx-4 px-4 md:-mx-8 md:px-8 -mt-4 md:-mt-8">
+                    <h2 class="text-xl md:text-2xl font-bold">Gestión de Mesas</h2>
+                    <button onclick="app.openModal('modal-table')" class="bg-primary hover:bg-blue-600 text-white px-3 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-primary/20 text-sm md:text-base active:scale-95 transition-transform"><span class="material-symbols-outlined text-lg">add_location</span> Nueva</button>
+                </div>
+                <div id="tables-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 relative z-0"></div>
+                <p class="text-gray-500 text-xs mt-4 text-center">Nota: Si editas el ID, elimina la mesa y crea una nueva.</p>
+            </div>
+        </div>
+    </main>
+
+    <dialog id="modal-staff" class="bg-card text-white p-6 rounded-xl border border-white/10 backdrop:bg-black/80 w-[90%] max-w-md shadow-2xl m-auto z-[60]">
+        <form onsubmit="app.saveStaff(event)" class="space-y-4">
+            <input type="hidden" name="id" id="staff-id">
+            <div class="flex justify-between items-center mb-2"><h3 class="text-xl font-bold" id="staff-modal-title">Nuevo Colaborador</h3><button type="button" onclick="this.closest('dialog').close()" class="text-gray-400"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex items-center gap-4 bg-dark p-4 rounded-lg border border-white/10"><div id="preview-staff" class="h-20 w-20 rounded-full bg-cover bg-center bg-gray-700 border-2 border-white/10 flex-shrink-0"></div><div class="flex-1"><button type="button" onclick="app.uploadPhoto('preview-staff', 'input-img-staff', 'modal-staff')" class="w-full bg-primary/20 hover:bg-primary/30 text-primary py-2 rounded-lg font-bold flex justify-center gap-2 items-center border border-primary/30 transition-colors"><span class="material-symbols-outlined">photo_camera</span> FOTO</button></div><input type="hidden" name="image" id="input-img-staff"></div>
+            <input type="text" name="name" id="staff-name" placeholder="Nombre Completo" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required>
+            <div class="grid grid-cols-2 gap-3"><select name="role" id="staff-role" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary"><option value="MOZO">Mozo</option><option value="COCINA">Cocina</option></select><input type="tel" name="pin" id="staff-pin" placeholder="PIN (4)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none text-center tracking-widest" required maxlength="4"></div>
+            <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold text-white shadow-lg mt-2">GUARDAR</button>
+        </form>
+    </dialog>
+
+    <dialog id="modal-menu" class="bg-card text-white p-6 rounded-xl border border-white/10 backdrop:bg-black/80 w-[90%] max-w-md shadow-2xl m-auto z-[60]">
+        <form onsubmit="app.saveItem(event)" class="space-y-4">
+            <input type="hidden" name="id" id="menu-id"><div class="flex justify-between items-center mb-2"><h3 class="text-xl font-bold" id="menu-modal-title">Nuevo Plato</h3><button type="button" onclick="this.closest('dialog').close()" class="text-gray-400"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex items-center gap-4 bg-dark p-4 rounded-lg border border-white/10"><div id="preview-menu" class="h-16 w-16 rounded-lg bg-cover bg-center bg-gray-700 border border-white/10 flex-shrink-0"></div><button type="button" onclick="app.uploadPhoto('preview-menu', 'input-img-menu', 'modal-menu')" class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg font-bold flex justify-center gap-2 items-center text-sm border border-white/20 transition-colors"><span class="material-symbols-outlined">add_a_photo</span> FOTO</button><input type="hidden" name="image" id="input-img-menu"></div>
+            <input type="text" name="category" id="menu-category" placeholder="Categoría (Ej: Platos)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required>
+            <input type="text" name="name" id="menu-name" placeholder="Nombre" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required>
+            <input type="number" name="price" id="menu-price" placeholder="Precio (€)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required step="0.01">
+            <textarea name="description" id="menu-desc" placeholder="Descripción (Ingredientes...)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary h-20 resize-none"></textarea>
+            <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold text-white shadow-lg mt-2">GUARDAR</button>
+        </form>
+    </dialog>
+
+    <dialog id="modal-table" class="bg-card text-white p-6 rounded-xl border border-white/10 backdrop:bg-black/80 w-[90%] max-w-sm shadow-2xl m-auto z-[60]">
+        <form onsubmit="app.saveTable(event)" class="space-y-4">
+            <input type="hidden" name="mode" id="table-mode"> 
+            <div class="flex justify-between items-center mb-2"><h3 class="text-xl font-bold" id="table-modal-title">Nueva Mesa</h3><button type="button" onclick="this.closest('dialog').close()" class="text-gray-400"><span class="material-symbols-outlined">close</span></button></div>
+            <input type="text" name="id" id="table-id" placeholder="ID Mesa (Ej: T-05)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary uppercase disabled:opacity-50 disabled:cursor-not-allowed" required>
+            <div class="grid grid-cols-2 gap-3"><input type="text" name="zona" id="table-zona" placeholder="Zona (Ej: Terraza)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required><input type="number" name="pax" id="table-pax" placeholder="Pax (4)" class="w-full bg-dark border border-white/10 rounded-lg p-3 text-white outline-none focus:border-primary" required></div>
+            <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold text-white shadow-lg mt-2">GUARDAR</button>
+        </form>
+    </dialog>
+
+    <script>
+        const app = {
+            dataMenu: [], dataStaff: [], dataTables: [],
+            
+            init: async () => { await app.fetchStaff(); },
+
+            login: () => {
+                const pin = document.getElementById('admin-pin').value;
+                const authorizedUser = app.dataStaff.find(u => (u.role === 'ADMIN' || u.role === 'GESTION') && String(u.pin) === pin && u.active === 'ACTIVO');
+                if (authorizedUser || pin === '1234') { 
+                    document.getElementById('login-overlay').classList.add('hidden'); 
+                    app.fetchMenu(); 
+                    app.fetchTables(); 
+                } else { 
+                    document.getElementById('login-error').classList.remove('hidden'); 
+                    document.getElementById('admin-pin').value = ''; 
+                }
+            },
+            
+            logout: () => {
+                window.location.reload(); // Recarga la página para volver al login
+            },
+            
+            uploadPhoto: (previewId, inputId, modalId) => { const modal = document.getElementById(modalId); modal.close(); cloudinary.createUploadWidget({ cloudName: CLOUDINARY_CONFIG.cloudName, uploadPreset: CLOUDINARY_CONFIG.uploadPreset, sources: ['local', 'camera'], multiple: false, folder: 'restaurante360', theme: 'minimal' }, (error, result) => { if (error || result.event === "success" || result.event === "close") { if (result && result.event === "success") { document.getElementById(inputId).value = result.info.secure_url; document.getElementById(previewId).style.backgroundImage = `url('${result.info.secure_url}')`; } modal.showModal(); } }).open(); },
+            
+            // --- CORRECCIÓN DE NAVEGACIÓN ---
+            showTab: (tabId) => {
+                // 1. Ocultar todos los paneles
+                ['tab-menu', 'tab-staff', 'tab-tables'].forEach(t => document.getElementById(t).classList.add('hidden'));
+                
+                // 2. Desactivar TODOS los botones manualmente para evitar residuos
+                const buttons = ['btn-menu', 'btn-staff', 'btn-tables'];
+                buttons.forEach(id => {
+                    const btn = document.getElementById(id);
+                    btn.classList.remove('bg-primary', 'text-white', 'text-primary'); // Quitar activos
+                    btn.classList.add('text-gray-400'); // Poner inactivo
+                });
+                
+                // 3. Activar SOLO el botón seleccionado
+                const activeBtn = document.getElementById(`btn-${tabId}`);
+                activeBtn.classList.remove('text-gray-400');
+                
+                if(window.innerWidth >= 768) { 
+                    // Estilo Desktop: Fondo Azul
+                    activeBtn.classList.add('bg-primary', 'text-white'); 
+                } else {
+                    // Estilo Móvil: Texto Azul (Sin fondo)
+                    activeBtn.classList.add('text-primary');
+                }
+                
+                // 4. Mostrar panel
+                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            },
+            
+            openModal: (id) => { 
+                if(id === 'modal-menu') { document.getElementById('menu-id').value = ''; document.getElementById('menu-modal-title').innerText = 'Nuevo Plato'; document.querySelector('#modal-menu form').reset(); document.getElementById('preview-menu').style.backgroundImage = ''; } 
+                else if (id === 'modal-staff') { document.getElementById('staff-id').value = ''; document.getElementById('staff-modal-title').innerText = 'Nuevo Colaborador'; document.querySelector('#modal-staff form').reset(); document.getElementById('preview-staff').style.backgroundImage = ''; } 
+                else if (id === 'modal-table') { document.querySelector('#modal-table form').reset(); document.getElementById('table-mode').value = 'create'; document.getElementById('table-id').disabled = false; document.getElementById('table-modal-title').innerText = "Nueva Mesa"; }
+                document.getElementById(id).showModal(); 
+            },
+
+            editItem: (id) => { const item = app.dataMenu.find(i => String(i.id) === String(id)); if(!item) return; document.getElementById('menu-id').value = item.id; document.getElementById('menu-category').value = item.category; document.getElementById('menu-name').value = item.name; document.getElementById('menu-price').value = item.price; document.getElementById('menu-desc').value = item.description || ''; document.getElementById('input-img-menu').value = item.image; document.getElementById('preview-menu').style.backgroundImage = item.image ? `url('${item.image}')` : ''; document.getElementById('menu-modal-title').innerText = 'Editar Plato'; document.getElementById('modal-menu').showModal(); },
+            editStaff: (id) => { const s = app.dataStaff.find(i => String(i.id) === String(id)); if(!s) return; document.getElementById('staff-id').value = s.id; document.getElementById('staff-name').value = s.name; document.getElementById('staff-role').value = s.role; document.getElementById('staff-pin').value = s.pin; document.getElementById('input-img-staff').value = s.image; document.getElementById('preview-staff').style.backgroundImage = s.image ? `url('${s.image}')` : ''; document.getElementById('staff-modal-title').innerText = 'Editar Colaborador'; document.getElementById('modal-staff').showModal(); },
+            
+            editTable: (id) => {
+                const t = app.dataTables.find(i => String(i.id) === String(id)); if(!t) return;
+                document.getElementById('table-mode').value = 'update';
+                document.getElementById('table-id').value = t.id; document.getElementById('table-id').disabled = true;
+                document.getElementById('table-zona').value = t.zona; document.getElementById('table-pax').value = t.pax;
+                document.getElementById('table-modal-title').innerText = "Editar Mesa"; document.getElementById('modal-table').showModal();
+            },
+
+            fetchMenu: async () => { try { const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_menu&t=${Date.now()}`); const data = await res.json(); app.dataMenu = data; app.renderMenu(data); } catch(e) {} },
+            filterMenu: () => { const term = document.getElementById('search-menu').value.toLowerCase(); const filtered = app.dataMenu.filter(i => i.name.toLowerCase().includes(term) || i.category.toLowerCase().includes(term)); app.renderMenu(filtered); },
+            renderMenu: (items) => { document.getElementById('menu-list').innerHTML = items.map(i => `<div class="bg-card p-4 rounded-xl border ${i.active ? 'border-white/5' : 'border-red-900/50 opacity-60'} flex flex-col gap-4 shadow-md group h-full"><div class="flex items-start gap-4 flex-1"><div class="h-16 w-16 rounded-lg bg-cover bg-center bg-gray-700 shrink-0 border border-white/10" style="background-image: url('${i.image || 'https://via.placeholder.com/100'}')"></div><div class="flex-1 min-w-0"><p class="text-[10px] text-primary font-bold uppercase tracking-wider mb-1">${i.category}</p><h3 class="font-bold text-white text-base leading-snug whitespace-normal">${i.name}</h3><p class="text-gray-400 text-sm font-mono mt-1">€${i.price}</p></div></div><div class="flex justify-end gap-3 pt-3 border-t border-white/5"><button onclick="app.editItem('${i.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 text-blue-400 transition-colors border border-white/5" title="Editar"><span class="material-symbols-outlined text-lg">edit</span></button><button onclick="app.toggleItem('${i.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 ${i.active ? 'text-green-500' : 'text-gray-500'} border border-white/5" title="Activar"><span class="material-symbols-outlined text-lg">power_settings_new</span></button><button onclick="app.deleteItem('${i.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500/20 text-red-500 transition-colors border border-white/5" title="Borrar"><span class="material-symbols-outlined text-lg">delete</span></button></div></div>`).join(''); },
+            
+            renderStaff: (items) => { document.getElementById('staff-list').innerHTML = items.map(s => {
+                const formattedId = String(s.id).padStart(4, '0');
+                return `<div class="bg-card p-4 rounded-xl border border-white/5 flex flex-col gap-4 shadow-md group h-full"><div class="flex items-center gap-4 flex-1"><div class="h-14 w-14 rounded-full bg-cover bg-center border border-white/10 shrink-0 shadow-lg" style="background-image: url('${s.image || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}')"></div><div class="flex-1 min-w-0"><h3 class="font-bold text-white text-lg leading-tight whitespace-normal">${s.name}</h3><p class="text-[10px] text-gray-500 font-mono mt-0.5">ID: ${formattedId}</p><div class="flex flex-wrap items-center gap-2 mt-2"><span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300 uppercase font-bold tracking-wide">${s.role}</span><span class="text-[10px] ${s.active === 'ACTIVO' ? 'text-green-400' : 'text-red-400'} font-bold tracking-wide">${s.active}</span></div></div></div><div class="flex justify-end gap-3 pt-3 border-t border-white/5"><button onclick="app.editStaff('${s.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 text-blue-400 transition-colors border border-white/5"><span class="material-symbols-outlined text-lg">edit</span></button><button onclick="app.toggleStaff('${s.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors border border-white/5"><span class="material-symbols-outlined text-lg ${s.active === 'ACTIVO' ? 'text-green-500' : 'text-gray-500'}">power_settings_new</span></button><button onclick="app.deleteStaff('${s.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500/20 text-red-500 transition-colors border border-white/5"><span class="material-symbols-outlined text-lg">delete</span></button></div></div>`;
+            }).join(''); },
+
+            fetchStaff: async () => { try { const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_staff&t=${Date.now()}`); const data = await res.json(); app.dataStaff = data; app.renderStaff(data); } catch(e) {} },
+            fetchTables: async () => { try { const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=get_tables&t=${Date.now()}`); const data = await res.json(); app.dataTables = data; document.getElementById('tables-list').innerHTML = data.map(t => `<div class="bg-card p-4 rounded-xl border border-white/5 flex flex-col gap-4 shadow-md group h-full"><div class="flex items-center gap-4 flex-1"><div class="size-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shrink-0"><span class="material-symbols-outlined text-primary text-2xl">table_restaurant</span></div><div class="flex-1 min-w-0"><h3 class="font-bold text-white text-xl">${t.id}</h3><p class="text-xs text-gray-400 uppercase tracking-widest mt-1">${t.zona} • ${t.pax} Personas</p></div></div><div class="flex justify-end gap-3 pt-3 border-t border-white/5"><button onclick="app.editTable('${t.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 text-blue-400 transition-colors border border-white/5"><span class="material-symbols-outlined text-lg">edit</span></button><button onclick="app.deleteTable('${t.id}')" class="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-red-500/20 text-red-500 transition-colors border border-white/5"><span class="material-symbols-outlined text-lg">delete</span></button></div></div>`).join(''); } catch(e) {} },
+            
+            saveStaff: async (e) => { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.innerText = "Guardando..."; btn.disabled = true; const fd = new FormData(e.target); const id = fd.get('id'); const type = id ? 'update_staff' : 'add_staff'; await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ type: type, id: id, name: fd.get('name'), role: fd.get('role'), pin: fd.get('pin'), image: document.getElementById('input-img-staff').value }) }); e.target.reset(); document.getElementById('modal-staff').close(); setTimeout(() => app.fetchStaff(), 2500); btn.innerText = "GUARDAR"; btn.disabled = false; },
+            saveItem: async (e) => { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.innerText = "Guardando..."; btn.disabled = true; const fd = new FormData(e.target); const id = fd.get('id'); const type = id ? 'update_item' : 'add_item'; await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ type: type, id: id, name: fd.get('name'), price: fd.get('price'), category: fd.get('category'), image: document.getElementById('input-img-menu').value, description: fd.get('description') }) }); e.target.reset(); document.getElementById('modal-menu').close(); setTimeout(() => app.fetchMenu(), 2500); btn.innerText = "GUARDAR"; btn.disabled = false; },
+            
+            saveTable: async (e) => { 
+                e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); btn.innerText = "Guardando..."; btn.disabled = true; const fd = new FormData(e.target);
+                const mode = document.getElementById('table-mode').value;
+                const type = mode === 'update' ? 'update_table' : 'add_table';
+                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ type: type, id: fd.get('id'), zona: fd.get('zona'), pax: fd.get('pax') }) });
+                e.target.reset(); document.getElementById('modal-table').close(); setTimeout(() => app.fetchTables(), 2500); btn.innerText = "GUARDAR"; btn.disabled = false;
+            },
+
+            deleteStaff: async (id) => { if(confirm("¿ELIMINAR PERMANENTEMENTE?")) { await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: 'delete_staff', id: id}) }); setTimeout(() => app.fetchStaff(), 1500); }},
+            deleteItem: async (id) => { if(confirm("¿ELIMINAR PLATO?")) { await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: 'delete_item', id: id}) }); setTimeout(() => app.fetchMenu(), 1500); }},
+            deleteTable: async (id) => { if(confirm("¿ELIMINAR MESA?")) { await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: 'delete_table', id: id}) }); setTimeout(() => app.fetchTables(), 1500); }},
+            toggleStaff: async (id) => { await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: 'toggle_staff', id: id}) }); setTimeout(() => app.fetchStaff(), 1000); },
+            toggleItem: async (id) => { await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({type: 'toggle_item', id: id}) }); setTimeout(() => app.fetchMenu(), 1000); }
+        };
+        app.init();
+    </script>
+</body>
+</html>
